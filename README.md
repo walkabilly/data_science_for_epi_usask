@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 # CHEP 898: Data Science for Epidemiology
 
 ## Course Syllabus
@@ -64,22 +69,35 @@ There is not one textbook for this course. We will use various components of dif
 
 Use of a statistical software program (R) is required for this course. You will also be asked to install other software including PostGRES (SQL) and Git. 
 
+## Dataset
+
+In this course we will use the [CanPath Student Dataset](https://canpath.ca/student-dataset/)  that provides students the unique opportunity to gain hands-on experience working with CanPath data. The CanPath Student Dataset is a synthetic dataset that was manipulated to mimic CanPath’s nationally harmonized data but does not include or reveal actual data of any CanPath participants.
+
+The CanPath Student Dataset is available to instructors at a Canadian university or college for use in an academic course, at no cost. CanPath will provide the Student Dataset and a supporting data dictionary.
+
+* Large sample size (Over 40,000 participants)
+* Real-world population-level Canadian data
+* Variety of areas of information allowing for a wide range of research topics
+* No cost to faculty
+* Potential for students to apply for real CanPath data to publish their findings
+
 ## General Class Schedule
-Week |	Date |	Topic |	Data Work
------|-------|--------|-----------
-1	| January 8	| Intro to Data Science 	| [Intro R]()
-2	| January 15	| R Wrangling and Visualization	| [Data Wrangling]()
-3	| January 21	| Version Control with Git/Github	| [Data Visualization]()
-4	| January 29	| Missing Data	| [Missing Data]()
-5	| February 5	| Linear Regression | [Linear Regression]() 
+
+Week |	Date |	Topic |	Data Work | Assignment Due |
+-----|-------|--------|---------- | ------ |
+1	| January 8	| Intro to Data Science 	| [Intro R]() | |
+2	| January 15	| R Wrangling and Visualization	| [Data Wrangling]() | |
+3	| January 21	| Version Control with Git/Github	| [Data Visualization]() | Data Wrangling | 
+4	| January 29	| Missing Data	| [Missing Data]() | Version Control | 
+5	| February 5	| Linear Regression | [Linear Regression]() | Missing Data |
 6	| February 12	| Logistic Regression | [Logistic Regression]()
 7	| February 19	| Reading Week	| 
-8	| February 26	| Scientific Computing	| [Scientific Computing/Big Data]()
-9	| March 5	| Causal Inference | [Causal Quartet]()
-10	| March 12 | Support Vector Machines | [SVM]()
-11	| March 19	| Random Forest	| [Random Forest]()
-12	| March 26	| Matching Methods	| [Matching]()
-13	| April 2	| Artificial Neural Networks	| [ANN]()
+8	| February 26	| Scientific Computing	| [Scientific Computing/Big Data]() | Independent Analysis 1 |
+9	| March 5	| Causal Inference | [Causal Quartet]() | Scientific Computing |
+10	| March 12 | Support Vector Machines | [Random Forest]() |  |
+11	| March 19	| Random Forest	| [Matching]() | Random Forest |
+12	| March 26	| Matching Methods	| [SVM]() | Matching |
+13	| April 2	| Artificial Neural Networks	| [ANN]() | Independent Analysis 2 |
 * Subject to change depending on speed
 
 ### Attendance and Participation
@@ -99,55 +117,39 @@ Assignment | Grade %
 [Independent Analysis]() – Part 2	| 15%
 Total	| 100%
 
-## Evaluation Components
+## Assignment Descriptions
 
 ### Data Wrangling and Visualization   
 Value: 		10% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: In this assignment you will complete a data wrangling assignment that will involve data cleaning, descriptive statistics, understanding missing data, and joining datasets together. 
 
 ### Github	
 Value: 		10% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: In this assignment you will create a Github account, install Git on your local computer, create a Github repository and commit and push your work to that Github repository. 
 
 ### Missing Data	
 Value: 		15% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: In this assignment you will apply and compare different methods for imputing missing data on large health administrative dataset. 
 
-### Independent Analysis	
+### Independent Analysis 1
 Value: 		10% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: This is part 1 of the independent analysis. You will need to find a dataset, develop an analysis plan to includes the major components of the course (ie., Github, Scientific Computing), and conduct descriptive statistics and data wrangling on your chosen dataset. 
 
 ### Random Forest 
 Value: 		10% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: In this analysis you will complete an Random Forest analysis using the Can Path student dataset. You will need to run the analysis, conduct detailed hyperparameter tuning, and conduct model comparisons.
 
 ### Scientific Computing/Big Data 
 Value: 		10% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: In this assignment you will use the [USask Plato High Performance Computing](https://wiki.usask.ca/display/ARC/Plato+HPC+Cluster) to run a large scale machine learning on a large (~1GB) dataset. 
 
 ### Matching 15%
 Value: 		15% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: In this analysis you will complete an machine learning based matching analysis using the Can Path student dataset.
 
 ### Independent Analysis 15%
 Value: 		15% of final grade  
-Due Date: 	
-Description: 
-Full detail: 
+Description: This is part 2 (final part) of the independent analysis. You will need to conduct a complete analysis including data wrangling, missing data handling, and apply at least 2 different machine learning methods to your data. 
 
 ### Self-Evaluation
 Type: 	Written report
