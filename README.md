@@ -23,6 +23,9 @@ output:
 ## Course Description
 This course introduces students to the principles of data science as applied to epidemiological research. Emphasis is on data wrangling, version control with Git and GitHub, high-performance computing, and machine learning techniques. It also compares traditional epidemiologic analysis approaches with contemporary machine learning methods.
 
+## Official Syllabus
+The official syllabus for this course is available for download [here](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/CHEP898_Data_Science_for_Epi_Syllabus_2025.pdf)
+
 ## Land Acknowledgement
 I acknowledge our shared connection to the land and recognize that Indigenous and Métis peoples on Treaty 6 Territory and all Indigenous peoples have been and continue to be stewards for social justice, equity, and land-based education. In the spirit of reconciliation may we all strive to learn and support the work of Indigenous communities as allies. 
 
@@ -89,7 +92,7 @@ Week |	Date |	Topic |	Data Work | Assignment Due |
 1	| January 8	| Intro to Data Science 	| [Intro R]() | |
 2	| January 15	| R Wrangling and Visualization	| [Data Wrangling]() | |
 3	| January 21	| Version Control with Git/Github	| [Data Visualization]() | Data Wrangling | 
-4	| January 29	| Missing Data	| [Missing Data]() | Version Control | 
+4	| January 29	| Missing Data	| [Missing Data]() | Git/Github | 
 5	| February 5	| Linear Regression | [Linear Regression]() | Missing Data |
 6	| February 12	| Logistic Regression | [Logistic Regression]()
 7	| February 19	| Reading Week	| 
@@ -159,54 +162,8 @@ Type: 	Written report
 Description: 	Complete the student self-evaluation form. 
 
 ## Submitting Assignments 
-All assignments should be submitted to the appropriate place in Canvas. All assignments are due at 5pm (CST) on the due date. Please don’t stay up until midnight to get the work done. Remember there are no late penalties so just take an extra day if you need and get some sleep. 
+All assignments should be submitted to the appropriate place in Canvas or Github. All assignments are due at 5pm (CST) on the due date. Please don’t stay up until midnight to get the work done. Remember there are no late penalties so just take an extra day if you need and get some sleep. 
 
 ## Late and Missing Assignments
 There is no penalty for late assignments. However, because many assignments have two parts, it is critical to the first assignment of the sections in around the due date. Missing assignments that are not submitted by the end of the course will receive a grade of zero. 
-
-## Readings
-
-
-## Access and Equity Services (AES) 
-Access and Equity Services (AES) is available to provide support to students who require accommodations due to disability, family status, and religious observances. 
-Students who have disabilities (learning, medical, physical, or mental health) are strongly encouraged to register with Access and Equity Services (AES) if they have not already done so. Students who suspect they may have disabilities should contact AES for advice and referrals at any time. Those students who are registered with AES with mental health disabilities and who anticipate that they may have responses to certain course materials or topics, should discuss course content with their instructors prior to course add / drop dates. 
-Students who require accommodations for pregnancy or substantial parental/family duties should contact AES to discuss their situations and potentially register with that office. 
-Students who require accommodations due to religious practices that prohibit the writing of exams on religious holidays should contact AES to self-declare and determine which accommodations are appropriate. In general, students who are unable to write an exam due to a religious conflict do not register with AES but instead submit an exam conflict form through their PAWS account to arrange accommodations. 
-Any student registered with AES, as well as those who require accommodations on religious grounds, may request alternative arrangements for mid-term and final examinations by submitting a request to AES by the stated deadliness. Instructors shall provide the examinations for students who are being accommodated by the deadlines established by AES.  
- 
-For more information or advice, visit https://students.usask.ca/health/centres/access-equity-services.php, or contact AES at 306-966-7273 (Voice/TTY 1-306-966-7276) or email aes@usask.ca. 
-
-## Academic Integrity
-The University of Saskatchewan is committed to the highest standards of academic integrity and honesty. Students are expected to be familiar with these standards regarding academic honesty and to uphold the policies of the University in this respect. Students are particularly urged to familiarize themselves with the provisions of the Student Conduct & Appeals section of the University Secretary Website and avoid any behavior that could potentially result in suspicions of cheating, plagiarism, misrepresentation of facts and/or participation in an offence. Academic dishonesty is a serious offence and can result in suspension or expulsion from the University. 
-All students should read and be familiar with the Regulations on Academic Student Misconduct (https://governance.usask.ca/student-conduct-appeals/academic-misconduct.php) as well as the Standard of Student Conduct in Non-Academic Matters and Procedures for Resolution of Complaints and Appeals (https://governance.usask.ca/student-conduct-appeals/non-academic-misconduct.php) 
-For more information on what academic integrity means for students see the Academic Integrity section of the University Library Website at: https://library.usask.ca/academic-integrity.php
-You are encouraged to complete the Academic Integrity Tutorial to understand the fundamental values of academic integrity and how to be a responsible scholar and member of the USask community - https://libguides.usask.ca/AcademicIntegrityTutorial
-There are also valuable resources on the Integrity Matters website: https://academic-integrity.usask.ca/
-
-# Copyright
-Course materials are provided to you based on your registration in a class, and anything created by your professors and instructors is their intellectual property and cannot be shared without written permission. If materials are designated as open education resources (with a creative commons license) you can share and/or use in alignment with the CC license. This includes exams, PowerPoint/PDF slides and other course notes. Additionally, other copyright-protected materials created by textbook publishers and authors may be provided to you based on license terms and educational exceptions in the Canadian Copyright Act (see http://laws-lois.justice.gc.ca/eng/acts/C-42/index.html).
-Before you copy or distribute others’ copyright-protected materials, please ensure that your use of the materials is covered under the University’s “Use of Materials Protected By Copyright” Policy available at https://policies.usask.ca/policies/operations-and-general-administration/copyright.php. For example, posting others’ copyright-protected materials on the open internet is not permitted by this policy or by the university Copyright Guidelines (available at https://library.usask.ca/copyright/general-information/copyright-guidelines.php) and requires permission from the copyright holder
-For more information about copyright, please visit https://library.usask.ca/copyright/ where there is information for students available at https://library.usask.ca/copyright/students/your-course-materials.php, or contact the University’s Copyright Coordinator at copyright.coordinator@usask.ca or 306-966-8817. 
-
-## Student Supports
-### Academic Support for Students  
-Visit the Learning Hub to learn how the University Library supports undergraduate and graduate students. Attend online or in-person workshops, review online resources or book 1-1 appointments for help with
-* First year experience
-* Research
-* Study strategies and skills
-* Writing
-* Math and Statistics
-
-## Teaching, Learning and Student Experience 
-Teaching, Learning and Student Experience (TLSE) provides developmental and support services and programs to students and the university community. For more information, see the students’ website http://students.usask.ca. 
-
-## Financial Support 
-Any student who faces unexpected challenges securing their food or housing and believes this may affect their performance in the course is urged to contact Student Central https://students.usask.ca/student-central.php.
-
-## Aboriginal Students’ Centre
-The Aboriginal Students’ Centre (ASC) is dedicated to supporting Indigenous student academic and personal success. The ASC offers personal, social, cultural and some academic supports to Métis, First Nations, and Inuit students. The ASC is in the Gordon Oakes Red Bear Students Centre, which is an intercultural gathering space that brings Indigenous and non-Indigenous students together to learn from, with and about one another in a respectful, inclusive, and safe environment. Visit https://students.usask.ca/indigenous/index.php or students are encouraged to visit the ASC’s Facebook page https://www.facebook.com/aboriginalstudentscentre/ 
-
-##  International Student and Study Abroad Centre
-The International Student and Study Abroad Centre (ISSAC) supports student success and facilitates international education experiences at USask and abroad. ISSAC is here to assist all international undergraduate, graduate, exchange, and English as a Second Language students in their transition to the University of Saskatchewan and to life in Canada. ISSAC offers advising and support on matters that affect international students and their families and on matters related to studying abroad as University of Saskatchewan students. Visit https://students.usask.ca/international/issac.php for more information.  
-
 
