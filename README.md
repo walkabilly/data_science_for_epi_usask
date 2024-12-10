@@ -106,16 +106,18 @@ Attendance and participation and reading ahead are critical to this course. Ther
 
 ## Assignment Grading Scheme
 
+You can find the detailed descriptions for all assignments below or in the assignments folder [here](https://github.com/walkabilly/data_science_for_epi_usask/tree/main/Assignments)
+
 Assignment | Grade %
 -----------|------
-[Data Wrangling and Visualization]() | 10%
-[Github]() |	10%
-[Missing Data]() |	15%
-[Independent Analysis]() - Part 1 |	10%
-[Random Forest]() | 15%
-[Scientific Computing/Big Data]() | 10%
-[Matching]()	| 15%
-[Independent Analysis]() – Part 2	| 15%
+[Data Wrangling and Visualization](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/data_wrangling_visualization.md) | 10%
+[Github](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/git_github.md) |	10%
+[Missing Data](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/missing_data.md) |	15%
+[Independent Analysis](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/analysis_part1.md) - Part 1 |	10%
+[Random Forest](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/random_forest.md) | 15%
+[Scientific Computing/Big Data](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/scientific_computing.md) | 10%
+[Matching](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/matching.md)	| 15%
+[Independent Analysis](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/analysis_part2.md) – Part 2	| 15%
 Total	| 100%
 
 ## Assignment Descriptions
