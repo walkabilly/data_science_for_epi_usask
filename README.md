@@ -1,7 +1,7 @@
 ---
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 # CHEP 898: Data Science for Epidemiology
@@ -40,12 +40,19 @@ This course will follow the general USask Guidelines about AI for Educators and 
 In general, my opinion is that you should exploring these tools, what they can do, and how you can integrate them into your work. These tools are great for editing, formatting, generating ideas, and writing very basic code. USask faculty and students have access to Microsoft Co-Pilot (https://teaching.usask.ca/learning-technology/tools/microsoft-copilot.php). It's critical that when you use these tools you are very aware of bias and that you intervene to correct the text. Here are my general rules for AI in this course.
 
 1. You can use AI tools for any or all parts of the work.
+
 2. If you do you must cite your work (as above).
-  2.1. Acknowledge AI tools: “All persons, sources, and tools that influence the ideas or generate the content should be properly acknowledged” (p. 3). Acknowledgement may be done in different ways, according to context and discipline, and should include the input to the tool.
-  2.2. Do not list AI tools as authors: Authors must take responsibility and be accountable for content and an AI tool cannot do so.
-  2.3. Recognize limits and biases of AI tools: Inaccuracies, errors, and bias are reproduced in AI tools in part because of the human produced materials used for training.
+  
+    2.1. Acknowledge AI tools: “All persons, sources, and tools that influence the ideas or generate the content should be properly acknowledged” (p. 3). Acknowledgement may be done in different ways, according to context and discipline, and should include the input to the tool.
+    
+    2.2. Do not list AI tools as authors: Authors must take responsibility and be accountable for content and an AI tool cannot do so.
+    
+    2.3. Recognize limits and biases of AI tools: Inaccuracies, errors, and bias are reproduced in AI tools in part because of the human produced materials used for training.
+
 3. If you do you must include a 500 word reflective essay about the experience as part of your self-evaluation.
+
 4. Be very careful with reference. Many of these tools just make up random references.
+
 5. I will not use tools like [GPTZero](https://gptzero.me/faq#i-m-an-educator-who-has-f) to detect whether you have used AI tools or not. We are making an agreement to be honest with each other here. This is small class. We have that luxury. 
 
 ## Contact Information
