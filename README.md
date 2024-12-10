@@ -3,6 +3,7 @@ output:
   pdf_document: default
   html_document: default
 ---
+
 # CHEP 898: Data Science for Epidemiology
 
 ## Course Syllabus
