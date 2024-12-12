@@ -96,9 +96,9 @@ The CanPath Student Dataset is available to instructors at a Canadian university
 
 Week |	Date |	Topic |	Data Work | Assignment Due |
 -----|-------|--------|---------- | ------ |
-1	| January 8	| Intro to Data Science 	| [Intro R]() | |
-2	| January 15	| R Wrangling and Visualization	| [Data Wrangling]() | |
-3	| January 21	| Version Control with Git/Github	| [Data Visualization]() | Data Wrangling | 
+1	| January 8	| Intro to Data Science 	| [Intro R + Data Wrangling](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/data_wrangling.md) | |
+2	| January 15	| R Wrangling and Visualization	| [Data Visualization](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/data_visualization.md) | |
+3	| January 21	| Version Control with Git/Github	| No code here | Data Wrangling | 
 4	| January 29	| Missing Data	| [Missing Data]() | Git/Github | 
 5	| February 5	| Linear Regression | [Linear Regression]() | Missing Data |
 6	| February 12	| Logistic Regression | [Logistic Regression]()
