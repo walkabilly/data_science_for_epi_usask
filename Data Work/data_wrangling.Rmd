@@ -1,0 +1,194 @@
+---
+title: "Data Wrangling"
+output:
+      html_document:
+        keep_md: true
+---
+
+```{r, warning = FALSE, message = FALSE}
+library(rstatix)
+library(tidyverse)
+library(pastecs)
+library(knitr)
+library(epitools)
+library(Epi)
+options(scipen=999) 
+```
+
+
+```{r}
+data <- read_csv("can_path_data.csv")
+```
+
+## General instructions
+
+### 1. Identify the variable types for each variable in the dataset
+
+```{r, echo=T, results='hide'}
+glimpse(data)
+```
+
+All of the variables here currently coded as _dbl_ except `ID` which is _chr_. That's incorrect and we are going to need to fix that when we recode.
+
+```{r}
+### Select specific columns
+cols <- c("SDC_EDU_LEVEL", "HS_GEN_HEALTH", "HS_ROUTINE_VISIT_EVER", "HS_ROUTINE_VISIT_LAST", "HS_DENTAL_VISIT_EVER", "HS_DENTAL_VISIT_LAST")
+data <- data %>% mutate_at(cols, factor)
+
+```
+
+```{r, echo=T, results='hide'}
+glimpse(data)
+```
+
+```{r}
+### Select by column number
+data <- data %>% mutate_at(10:15, factor)
+```
+
+```{r, echo=T, results='hide'}
+glimpse(data)
+```
+
+### 3. Recode and label categorical variables as necessary
+
+```{r}
+data <- data %>%
+	mutate(gender_recode = case_when(
+		SDC_GENDER == 1 ~ "Male",
+    SDC_GENDER == 2 ~ "Female"
+	))
+
+data$gender_recode <- as.factor(data$gender_recode) 
+
+### Checking our code to make sure our recode is correct
+table(data$SDC_GENDER, data$gender_recode)
+```
+
+### Add the `NUT_VEG_QTY` and the `NUT_FRUITS_QTY` to create one variable
+    * Create a categorical variable that represents the recommended fruit and vegetable consumption per day
+
+```{r}
+summary(data$NUT_VEG_QTY)
+summary(data$NUT_FRUITS_QTY)
+
+### No missing data the no weird codings for the numbers. Great! 
+
+data <- data %>%
+	mutate(fruit_veg_tot = NUT_VEG_QTY + NUT_FRUITS_QTY)
+
+summary(data$fruit_veg_tot)
+
+data <- data %>%
+	mutate(fruit_veg_cat = case_when(
+		fruit_veg_tot <= 7  ~ "Not Meeting Guidelines",
+    fruit_veg_tot > 7 ~ "Meeting Guidelines"
+	))
+
+table(data$fruit_veg_cat)
+
+data <- data %>%
+	mutate(fruit_veg_dic = case_when(
+		fruit_veg_tot <= 7 ~ 0,
+    fruit_veg_tot > 7 ~ 1
+	))
+
+table(data$fruit_veg_tot, data$fruit_veg_cat)
+```
+
+### Create a categorical variable for the `PA_TOTAL_SHORT` variable the defines low, moderate, and high activity per week
+    * Low - < 600 MET minutes per week
+    * Moderate - >=600 to <3000 MET minutes per week
+    * High - >=3000 MET minutes per week
+
+### Calculate the mean and standard deviation
+    * For the variables were it is appropriate
+    * Including the new variables you have created
+    
+```{r}
+summary(data$PA_TOTAL_SHORT)
+
+data <- data %>%
+	mutate(pa_cat = case_when(
+		PA_TOTAL_SHORT < 600  ~ "Low Activity",
+		PA_TOTAL_SHORT >= 3000 ~ "High Activity",
+		PA_TOTAL_SHORT >= 600 ~ "Moderate Activity"
+	))
+
+### Flag we need to put the low and how activity first otherwise we don't get the right answer
+```
+
+### Calculate the percents and frequencies 
+    * For the variables were it is appropriate to do so
+
+There are __MANY__ different ways to do this in R. There is no one best way. 
+
+```{r}
+## First we need to make sure we get the variables recoded and organized
+
+### Example with gender where we already recoded
+gender_table <- bind_rows(table(data$gender_recode), prop.table(table(data$gender_recode)))
+
+### Example with fruit_veg_cat where we already recoded
+fruit_veg_table <- bind_rows(table(data$fruit_veg_cat), prop.table(table(data$fruit_veg_cat)))
+```
+
+### Are there missing data?
+
+```{r}
+summary(data$fruit_veg_tot)
+```
+
+### Create a 2*2 table for fruit and vegetable consumption by gender
+    * Interpret the 2*2 table result
+
+```{r}
+gender_fv_table <- table(data$gender_recode, data$fruit_veg_cat)
+gender_fv_table
+```
+
+## Joining datasets
+
+### Stacking 2 datasets on top of each other
+
+If we want to stack two datasets we need to use the `bind` set of functions. We can either use `bind_rows` or `bind_cols` from the `tidyverse` set of packages to do this. Let's say we have two datasets with the same information but different participants. We want to stack them so we can do some bigger analysis. 
+
+```{r}
+data1 <- read_csv("data1.csv")
+data2 <- read_csv("data2.csv")
+```
+
+Data1 and Data2 have the some number and information in the columns but they are not together. We can join them using `bind_rows`. 
+
+```{r}
+data_1_2 <- bind_rows(data1, data2)
+```
+
+2. Join by ID
+
+If you have 2 datasets with different data that you want to join you can use different join methods. These terms are from computer science. `full_join`, `left_join`, `right_join`, etc. 
+
+```{r}
+names_data <- read_csv("names.csv")
+glimpse(names_data)
+
+data_all <- left_join(data_1_2, names_data, by = join_by(id))
+table(data_all$parent)
+```
+
+## Data challenge
+
+We can also do more advanced things like select and bind all of the files in a folder with a specific filename or file extension. 
+
+```{}
+paths <- list.files(pattern = "data.*\\.csv", full.names = TRUE)
+paths
+
+files <- map(paths, read_csv)
+length(files)
+
+data_all <- list_rbind(files)
+#write_csv(data_all, "data_all.csv")
+```
+
+
