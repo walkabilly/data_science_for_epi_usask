@@ -154,8 +154,8 @@ gender_fv_table
 If we want to stack two datasets we need to use the `bind` set of functions. We can either use `bind_rows` or `bind_cols` from the `tidyverse` set of packages to do this. Let's say we have two datasets with the same information but different participants. We want to stack them so we can do some bigger analysis. 
 
 ```{r}
-data1 <- read_csv("data1.csv")
-data2 <- read_csv("data2.csv")
+data1 <- read_csv("data_1.csv")
+data2 <- read_csv("data_2.csv")
 ```
 
 Data1 and Data2 have the some number and information in the columns but they are not together. We can join them using `bind_rows`. 
@@ -181,7 +181,7 @@ table(data_all$parent)
 We can also do more advanced things like select and bind all of the files in a folder with a specific filename or file extension. 
 
 ```{}
-paths <- list.files(pattern = "data.*\\.csv", full.names = TRUE)
+paths <- list.files(pattern = "data_*\\.csv", full.names = TRUE)
 paths
 
 files <- map(paths, read_csv)

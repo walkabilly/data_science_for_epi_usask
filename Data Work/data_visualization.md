@@ -385,3 +385,145 @@ plot(scatter_plot_gender_brewer)
 ```
 
 ![](data_visualization_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
+## geom_*
+
+There are lots of different geoms available with the standard `ggplot2` package [https://ggplot2.tidyverse.org/reference/](https://ggplot2.tidyverse.org/reference/), but there are also lots of other ones developed by the community in specific packages. For example, if we wanted to make a [joy plot](https://katherinemwood.github.io/post/joy/) we could use the `ggridges` package. Let's try. First, find a tutorial online and see if you can apply it to your data. I used [this one](https://r-charts.com/distribution/ggridges/). 
+
+
+### Cleaning income data
+
+
+``` r
+# Recoding income to have a few categories for the joy plot
+
+table(data$SDC_INCOME)
+```
+
+```
+## 
+##    1    2    3    4    5    6    7    8 
+##  472 1985 5745 6831 6602 7600 3463 2555
+```
+
+``` r
+# Recoding income here so we can see the levels more easily
+
+data <- data %>%
+	mutate(income_recode = case_when(
+		SDC_INCOME == 1 ~ "1_Less than 10 000 $",
+    SDC_INCOME == 2 ~ "2_10 000 $ - 24 999 $",
+		SDC_INCOME == 3 ~ "3_25 000 $ - 49 999 $",
+		SDC_INCOME == 4 ~ "4_50 000 $ - 74 999 $",
+    SDC_INCOME == 5 ~ "5_75 000 $ - 99 999 $",
+		SDC_INCOME == 6 ~ "6_100 000 $ - 149 999 $",
+    SDC_INCOME == 7 ~ "7_150 000 $ - 199 999 $",
+    SDC_INCOME == 8 ~	"8_200 000 $ or more"
+	)) 
+
+data$income_recode <- as.factor(data$income_recode)
+
+table(data$SDC_INCOME, data$income_recode)
+```
+
+```
+##    
+##     1_Less than 10 000 $ 2_10 000 $ - 24 999 $ 3_25 000 $ - 49 999 $
+##   1                  472                     0                     0
+##   2                    0                  1985                     0
+##   3                    0                     0                  5745
+##   4                    0                     0                     0
+##   5                    0                     0                     0
+##   6                    0                     0                     0
+##   7                    0                     0                     0
+##   8                    0                     0                     0
+##    
+##     4_50 000 $ - 74 999 $ 5_75 000 $ - 99 999 $ 6_100 000 $ - 149 999 $
+##   1                     0                     0                       0
+##   2                     0                     0                       0
+##   3                     0                     0                       0
+##   4                  6831                     0                       0
+##   5                     0                  6602                       0
+##   6                     0                     0                    7600
+##   7                     0                     0                       0
+##   8                     0                     0                       0
+##    
+##     7_150 000 $ - 199 999 $ 8_200 000 $ or more
+##   1                       0                   0
+##   2                       0                   0
+##   3                       0                   0
+##   4                       0                   0
+##   5                       0                   0
+##   6                       0                   0
+##   7                    3463                   0
+##   8                       0                2555
+```
+
+### Cleaning sitting data
+
+
+``` r
+summary(data$PA_SIT_AVG_TIME_DAY)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##     0.0   248.6   360.0   391.1   484.3  9999.0   11257
+```
+
+``` r
+data <- data %>%
+          mutate(pa_sit = case_when(
+            PA_SIT_AVG_TIME_DAY > 800 ~ 800,
+            TRUE ~ PA_SIT_AVG_TIME_DAY
+          ))
+
+summary(data$pa_sit)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##     0.0   248.6   360.0   379.7   484.3   800.0   11257
+```
+
+### Cleaning sitting data
+
+
+``` r
+library(ggridges)
+library(harrypotter)
+
+ggplot(data, aes(x = pa_sit, y = income_recode,  fill = income_recode)) +
+  geom_density_ridges2(rel_min_height = 0.01) +
+  stat_density_ridges(quantile_lines = TRUE, alpha = 0.75,
+                      quantiles = 2) +
+  scale_fill_hp(discrete = TRUE, option = "LunaLovegood", name = "Income")
+```
+
+```
+## Picking joint bandwidth of 32.6
+```
+
+```
+## Warning: Removed 11257 rows containing non-finite outside the scale range
+## (`stat_density_ridges()`).
+```
+
+```
+## Picking joint bandwidth of 32.6
+```
+
+```
+## Warning: Removed 11257 rows containing non-finite outside the scale range
+## (`stat_density_ridges()`).
+```
+
+![](data_visualization_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
+## Data challenge
+
+Create a unique ggplot using a `geom_` you have not used before.  
+
+```{}
+
+```
