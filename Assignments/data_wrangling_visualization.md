@@ -27,13 +27,13 @@ By completing this assignment, you will:
    - Load the provided datasets and examine their structure (e.g., columns, data types, unique values).  
    - Identify and correct issues such as outliers, duplicates, and inconsistent formatting.  
 
-2. **Descriptive Statistics**  
+2. **Joining Datasets**  
+   - Combine tne two related datasets by performing appropriate join operations (e.g., inner join, left join).  
+   - Ensure the resulting dataset maintains consistency and completeness. 
+
+3. **Descriptive Statistics**  
    - Calculate key statistics (e.g., mean, median, mode, variance, and standard deviation) for relevant variables.  
    - Identify trends or anomalies based on these statistics.  
-
-3. **Joining Datasets**  
-   - Combine two or more related datasets by performing appropriate join operations (e.g., inner join, left join).  
-   - Ensure the resulting dataset maintains consistency and completeness.  
 
 4. **Data Visualization**  
    - Create at least three visualizations to highlight key findings.  
