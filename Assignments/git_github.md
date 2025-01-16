@@ -42,6 +42,7 @@ By completing this assignment, you will:
    - Add a `README.md` file to your local repository. Use it to describe the purpose of the repository.  
 
 5. **Commit and Push Changes**  
+   - Take your `data_wrangling` assignment and commit and push it to the Github repo you just create. 
    - Stage your changes, commit them with meaningful messages, and push them to your GitHub repository.  
    - Verify that the changes appear correctly on your GitHub repository.  
    
