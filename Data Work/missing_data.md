@@ -307,8 +307,15 @@ median(data_shadow$PA_TOTAL_SHORT)
 ```
 
 ``` r
-ggplot(data_shadow, aes(x = pa_not_imputed, y = PA_TOTAL_SHORT, colour = PA_TOTAL_SHORT_NA)) + 
-        geom_miss_point(alpha = 0.2)
+density_mean_imp <- ggplot(data_shadow) +
+                geom_density(aes(pa_not_imputed, colour= "pa_not_imputed")) +
+                geom_density(aes(PA_TOTAL_SHORT, colour= "PA_TOTAL_SHORT"))
+plot(density_mean_imp)
+```
+
+```
+## Warning: Removed 6763 rows containing non-finite outside the scale range
+## (`stat_density()`).
 ```
 
 ![](missing_data_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
@@ -316,6 +323,279 @@ ggplot(data_shadow, aes(x = pa_not_imputed, y = PA_TOTAL_SHORT, colour = PA_TOTA
 When we input the mean we don't change the mean so it's not really worth looking at differences in the mean. But we look at the median we can see differences. Also, I plotted the imputed data `PA_TOTAL_SHORT` and the not imputed data `pa_not_imputed`. We can see they are almost identical but there are values imputed with the mean for `PA_TOTAL_SHORT`. 
 
 ###  Multivariate Imputation by Chained Equations (MICE)
+
+We can do mean with imputation with `mice` as well. Slightly different function and structure to the calls but let's try it. `mice` will be the main package we will use for imputation so best we get used to this now.
+
+#### Mean imputation with mice
+
+Here we specify the `mice` package and we have three arguments `method` specifies the type of imputation method to use, `m` = specifies the number of multiple imputations (more on this later) the default is 5 but we want to keep it at 1 for now, `maxit` specifies the number of iterations we want to use (the default is 5). 
+
+Now we havea new object in our environment called `data_imp_1` but this is not a dataframe. This object has details about the imputation as well as the new imputed dataframe. To get the dataframe we need to use the `complete` function. 
+
+
+``` r
+data_imp <- mice(data, method = "mean", m = 1, maxit = 1)
+```
+
+```
+## 
+##  iter imp variable
+##   1   1  SDC_MARITAL_STATUS  SDC_EDU_LEVEL  SDC_EDU_LEVEL_AGE  SDC_INCOME  SDC_INCOME_IND_NB  SDC_HOUSEHOLD_ADULTS_NB  SDC_HOUSEHOLD_CHILDREN_NB  HS_GEN_HEALTH  PA_TOTAL_SHORT  PM_BMI_SR  HS_ROUTINE_VISIT_EVER  HS_DENTAL_VISIT_EVER  HS_FOBT_EVER  HS_COL_EVER  HS_SIG_EVER  HS_SIG_COL_EVER  HS_POLYP_EVER  HS_PSA_EVER  WH_CONTRACEPTIVES_EVER  WH_HFT_EVER  WH_MENOPAUSE_EVER  WH_HRT_EVER  WH_HYSTERECTOMY_EVER  WH_OOPHORECTOMY_EVER  HS_MMG_EVER  HS_PAP_EVER  DIS_HBP_EVER  DIS_MI_EVER  DIS_STROKE_EVER  DIS_ASTHMA_EVER  DIS_COPD_EVER  DIS_DEP_EVER  DIS_DIAB_EVER  DIS_LC_EVER  DIS_CH_EVER  DIS_CROHN_EVER  DIS_UC_EVER  DIS_IBS_EVER  DIS_ECZEMA_EVER  DIS_SLE_EVER  DIS_PS_EVER  DIS_MS_EVER  DIS_OP_EVER  DIS_ARTHRITIS_EVER  DIS_CANCER_EVER  DIS_HBP_FAM_EVER  DIS_MI_FAM_EVER  DIS_STROKE_FAM_EVER  DIS_ASTHMA_FAM_EVER  DIS_COPD_FAM_EVER  DIS_DEP_FAM_EVER  DIS_DIAB_FAM_EVER  DIS_LC_FAM_EVER  DIS_CH_FAM_EVER  DIS_CROHN_FAM_EVER  DIS_UC_FAM_EVER  DIS_IBS_FAM_EVER  DIS_ECZEMA_FAM_EVER  DIS_SLE_FAM_EVER  DIS_PS_FAM_EVER  DIS_MS_FAM_EVER  DIS_OP_FAM_EVER  DIS_ARTHRITIS_FAM_EVER  DIS_CANCER_FAM_EVER  DIS_CANCER_F_EVER  DIS_CANCER_M_EVER  DIS_CANCER_SIB_EVER  DIS_CANCER_CHILD_EVER  ALC_EVER  SMK_CIG_EVER  SMK_CIG_WHOLE_EVER  DIS_ENDO_HB_CHOL_EVER  DIS_CARDIO_HD_EVER  DIS_RESP_SLEEP_APNEA_EVER  DIS_MH_ANXIETY_EVER  DIS_MH_ADDICTION_EVER  DIS_NEURO_MIGRAINE_EVER  PSE_ADULT_WRK_DURATION  PSE_WRK_FREQ  WRK_FULL_TIME  WRK_PART_TIME  WRK_RETIREMENT  WRK_HOME_FAMILY  WRK_UNABLE  WRK_UNEMPLOYED  WRK_UNPAID  WRK_STUDENT  WRK_EMPLOYMENT  WRK_SCHEDULE_CUR_CAT
+```
+
+```
+## Warning: Number of logged events: 13
+```
+
+``` r
+data_imp_c <- complete(data_imp)
+
+miss_data <- miss_var_summary(data)
+miss_data_imp_c <- miss_var_summary(data_imp_c)
+```
+
+Let's plot the two distributions of PA_TOTAL_SHORT and see what they look like.
+
+First we are going to create a dataframe that includes the imputed and non-imputed data. I'm purposefully making this only a subset. 
+
+
+``` r
+data_pa <- select(data, ID, PA_TOTAL_SHORT, SDC_AGE_CALC, DIS_ASTHMA_EVER)
+data_pa_imp <- select(data_imp_c, ID, PA_TOTAL_SHORT, SDC_AGE_CALC, DIS_ASTHMA_EVER)
+data_pa_imp$PA_TOTAL_SHORT_imp <- data_pa_imp$PA_TOTAL_SHORT
+data_pa_imp$SDC_AGE_CALC_imp <- data_pa_imp$SDC_AGE_CALC
+data_pa_imp$DIS_ASTHMA_EVER_imp <- data_pa_imp$DIS_ASTHMA_EVER
+data_pa_imp$PA_TOTAL_SHORT <- NULL
+data_pa_imp$SDC_AGE_CALC <- NULL
+data_pa_imp$DIS_ASTHMA_EVER <- NULL
+
+data_pa_imp <- full_join(data_pa, data_pa_imp, by = "ID", suffix = c("", ""))
+```
+
+Now let's check the mean imputation again. We should see that large spike like we saw previously at around 2574 minutes. 
+
+
+``` r
+summary(data_pa_imp$PA_TOTAL_SHORT)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##       0     600    1782    2574    3732   19278    6763
+```
+
+``` r
+summary(data_pa_imp$PA_TOTAL_SHORT_imp)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0     792    2379    2574    3199   19278
+```
+
+``` r
+density_imp <- ggplot(data_pa_imp) +
+                geom_density(aes(PA_TOTAL_SHORT, colour= "PA_TOTAL_SHORT")) +
+                geom_density(aes(PA_TOTAL_SHORT_imp, colour= "PA_TOTAL_SHORT_imp"))
+plot(density_imp)
+```
+
+```
+## Warning: Removed 6763 rows containing non-finite outside the scale range
+## (`stat_density()`).
+```
+
+![](missing_data_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+
+### Variable types
+
+Now, remember that we had all of the variables as numeric here eventhough we know some of them are factor. Many of the imputation methods work only with either numeric or factor variables and we probably need to specify which one for specific variables, or get the package to identify variable types and help us make an informed decision. 
+
+Let's keep check our `DIS_ASTHMA_EVER` variable and see what the imputation looks like when the package things it's a numeric variable from 0-1. 
+
+
+``` r
+summary(data_pa_imp$DIS_ASTHMA_EVER)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##  0.0000  0.0000  0.0000  0.2039  0.0000  2.0000    1228
+```
+
+``` r
+table(data_pa_imp$DIS_ASTHMA_EVER)
+```
+
+```
+## 
+##     0     1     2 
+## 33275  5221  1463
+```
+
+``` r
+density_imp_asthma <- ggplot(data_pa_imp) +
+                geom_density(aes(DIS_ASTHMA_EVER, colour= "DIS_ASTHMA_EVER")) +
+                geom_density(aes(DIS_ASTHMA_EVER_imp, colour= "DIS_ASTHMA_EVER_imp"))
+plot(density_imp_asthma)
+```
+
+```
+## Warning: Removed 1228 rows containing non-finite outside the scale range
+## (`stat_density()`).
+```
+
+![](missing_data_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
+Slightly harder to visualize but we can see that there is now a small imputation effect at 0.2 that was not there before. Let's convert this to factor and try again. 
+
+
+``` r
+data_pa$DIS_ASTHMA_EVER <- as.factor(data_pa$DIS_ASTHMA_EVER)
+
+data_pa_imp <- mice(data_pa, method = "mean", m = 1, maxit = 1)
+```
+
+```
+## Warning: Type mismatch for variable(s): DIS_ASTHMA_EVER
+## Imputation method mean is not for factors with >2 levels.
+```
+
+```
+## 
+##  iter imp variable
+##   1   1  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+```
+
+```
+## Warning in mean.default(y[ry]): argument is not numeric or logical: returning
+## NA
+```
+
+```
+## Warning: Number of logged events: 1
+```
+
+``` r
+data_pa_imp_c <- complete(data_pa_imp)
+```
+
+Now we get a warning that mean imputation does not work with factors with >2 levels. The imputation still happens for the other variables where `mice` can impute using mean imputation but it does nothing for the factor variable with >2 levels.
+
+Let's look at the possible methods for `mice` and what the different approaches are. This is from the original publication in 2011 but there are a number of more advanced methods as well. 
+
+> van Buuren, S., & Groothuis-Oudshoorn, K. (2011). mice: Multivariate Imputation by Chained Equations in R. Journal of Statistical Software, 45(3), 1–67. https://doi.org/10.18637/jss.v045.i03
+
+| Method       | Description                     | Scale type          | Default |
+|--------------|---------------------------------|---------------------|---------|
+| pmm          | Predictive mean matching        | numeric             | Y       |
+| norm         | Bayesian linear regression      | numeric             |         |
+| norm.nob     | Linear regression, non-Bayesian | numeric             |         |
+| mean         | Unconditional mean imputation   | numeric             |         |
+| 2L.norm      | Two-level linear model          | numeric             |         |
+| logreg       | Logistic regression             | factor, 2 levels    | Y       |
+| polyreg      | Multinomial logit model         | factor, >2 levels   | Y       |
+| polr         | Ordered logit model             | ordered, >2 levels  | Y       |
+| lda          | Linear discriminant analysis    | factor              |         |
+| sample       | Random sample from the observed data | any              |         |
+
+We can get all of the possible methods using `methods(mice)`
+
+
+``` r
+methods(mice)
+```
+
+```
+## Warning in .S3methods(generic.function, class, envir, all.names = all.names, :
+## function 'mice' appears not to be S3 generic; found functions that look like S3
+## methods
+```
+
+```
+##  [1] mice.impute.2l.bin              mice.impute.2l.lmer            
+##  [3] mice.impute.2l.norm             mice.impute.2l.pan             
+##  [5] mice.impute.2lonly.mean         mice.impute.2lonly.norm        
+##  [7] mice.impute.2lonly.pmm          mice.impute.cart               
+##  [9] mice.impute.jomoImpute          mice.impute.lasso.logreg       
+## [11] mice.impute.lasso.norm          mice.impute.lasso.select.logreg
+## [13] mice.impute.lasso.select.norm   mice.impute.lda                
+## [15] mice.impute.logreg              mice.impute.logreg.boot        
+## [17] mice.impute.mean                mice.impute.midastouch         
+## [19] mice.impute.mnar.logreg         mice.impute.mnar.norm          
+## [21] mice.impute.mpmm                mice.impute.norm               
+## [23] mice.impute.norm.boot           mice.impute.norm.nob           
+## [25] mice.impute.norm.predict        mice.impute.panImpute          
+## [27] mice.impute.passive             mice.impute.pmm                
+## [29] mice.impute.polr                mice.impute.polyreg            
+## [31] mice.impute.quadratic           mice.impute.rf                 
+## [33] mice.impute.ri                  mice.impute.sample             
+## [35] mice.mids                       mice.theme                     
+## see '?methods' for accessing help and source code
+```
+
+### Mice default
+
+If we just let `mice` go and don't specify the method, the package will use the defaults to decide which type of imputation method to use. We can get that information using the `method` function on the saved `mids` object we generated. 
+
+
+``` r
+mice_1 <- mice(data_pa, m = 1, maxit = 1)
+```
+
+```
+## 
+##  iter imp variable
+##   1   1  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+```
+
+```
+## Warning: Number of logged events: 1
+```
+
+``` r
+mice_1$method
+```
+
+```
+##              ID  PA_TOTAL_SHORT    SDC_AGE_CALC DIS_ASTHMA_EVER 
+##              ""           "pmm"              ""       "polyreg"
+```
+
+Here the package is using `pmm` [predictive mean matching](https://www.rdocumentation.org/packages/mice/versions/3.17.0/topics/mice.impute.pmm)  for the PA_TOTAL_SHORT imputation and `polyreg` [polytomous regression](https://www.rdocumentation.org/packages/mice/versions/3.17.0/topics/mice.impute.polyreg) for the DIS_ASTHMA_EVER variable. 
+
+
+``` r
+data_mice_1 <- complete(mice_1)
+
+miss_var_summary(data_mice_1)
+```
+
+```
+## # A tibble: 4 × 3
+##   variable        n_miss pct_miss
+##   <chr>            <int>    <num>
+## 1 ID                   0        0
+## 2 PA_TOTAL_SHORT       0        0
+## 3 SDC_AGE_CALC         0        0
+## 4 DIS_ASTHMA_EVER      0        0
+```
+
+``` r
+miss_var_summary(data_pa)
+```
+
+```
+## # A tibble: 4 × 3
+##   variable        n_miss pct_miss
+##   <chr>            <int>    <num>
+## 1 PA_TOTAL_SHORT    6763    16.4 
+## 2 DIS_ASTHMA_EVER   1228     2.98
+## 3 ID                   0     0   
+## 4 SDC_AGE_CALC         0     0
+```
+
+
 
 https://amices.org/Winnipeg/Practicals/Practical_I.html
 
