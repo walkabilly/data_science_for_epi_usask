@@ -6,6 +6,42 @@ output:
 ---
 
 
+``` r
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```
+## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+## ✔ dplyr     1.1.4     ✔ readr     2.1.5
+## ✔ forcats   1.0.0     ✔ stringr   1.5.1
+## ✔ ggplot2   3.5.1     ✔ tibble    3.2.1
+## ✔ lubridate 1.9.3     ✔ tidyr     1.3.1
+## ✔ purrr     1.0.2     
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()
+## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+```
+
+``` r
+library(visdat)
+library(naniar)
+library(mice)
+```
+
+```
+## 
+## Attaching package: 'mice'
+## 
+## The following object is masked from 'package:stats':
+## 
+##     filter
+## 
+## The following objects are masked from 'package:base':
+## 
+##     cbind, rbind
+```
 
 ## Missing data
 
@@ -36,6 +72,67 @@ data <- read_csv("can_path_data.csv")
 ``` r
 data <- data %>% select(ID:HS_GEN_HEALTH, PA_TOTAL_SHORT, PM_BMI_SR, contains("_EVER"), contains("WRK_"))
 ```
+
+## Ways R encodes missing(ish) data
+
+### NaN and Inf are related to NA.
+
+#### NaN
+
+NaN represents `Not a Number`. NaN can be generated, for example, by taking the log of a negative number. They can be tested for with is.nan()
+
+
+``` r
+x <- log(c(1, -1, NA))
+```
+
+```
+## Warning in log(c(1, -1, NA)): NaNs produced
+```
+
+``` r
+x
+```
+
+```
+## [1]   0 NaN  NA
+```
+
+``` r
+is.nan(x)
+```
+
+```
+## [1] FALSE  TRUE FALSE
+```
+
+#### Inf
+
+Inf and -Inf represent positive and negative infinite numbers respectively. These can be generated, for example, by dividing by zero, and tested for with is.infinite()
+
+
+``` r
+y <- c(-Inf, 0, Inf)
+is.infinite(y)
+```
+
+```
+## [1]  TRUE FALSE  TRUE
+```
+
+### Comparison of missing types
+
+The test is.finite() it TRUE if the value is numeric and not NA, NaN, Inf or -Inf.
+
+| value |	is.na |	is.nan |	is.infinite |	is.finite |
+| ----- | ------ | ------ | ------ |
+| 1 	| FALSE |	FALSE |	FALSE |	TRUE
+| NA 	| TRUE |	FALSE |	FALSE |	FALSE
+| NaN |	TRUE |	TRUE |	FALSE |	FALSE
+| Inf |	FALSE |	FALSE |	TRUE |	FALSE
+| -Inf |	FALSE |	FALSE |	TRUE |	FALSE
+
+## Missing data analysis
 
 ### We want a quick summary of missing data for each variable. This function is from the `naniar` package. We have lots of variables so let's save this as a table that we inspect a little easier. 
 
@@ -154,7 +251,7 @@ Now that we have a more manageable dataframe let's visualize missing with the pa
 vis_dat(data, warn_large_data = FALSE)
 ```
 
-![](missing_data_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+![](missing_data_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
 
 We have fixed the problem with logical variables and those with too much missing to do anything with really. Now let's move on to what we can actually do. 
 
@@ -166,6 +263,20 @@ naniar provides functions to specifically work on this type of problem using the
 
 * `tidyr::replace_na`: Missing values turns into a value (NA –> -99)
 * `naniar::replace_with_na`: Value becomes a missing value (-99 –> NA)
+
+## Upset plot
+
+When we are thinking about missing data mechanism, an upset plot can help us visuliaze potential patterns in missing data that will give is information about which variables to include or exclude from our missing data model. The `naniar` package has this built in [gg_miss_upset](https://naniar.njtierney.com/reference/gg_miss_upset.html).
+
+
+``` r
+gg_miss_upset(data, order.by = "freq", nsets = 10)
+```
+
+![](missing_data_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
+What are we looking for here? We are looking for patterns of missing data and things that might group together. A clear pattern is that the 
+__HS__ variables tend to be missing together. These are mammography and pap test variables so men may be missing these data but the dataset is not capturing this well. It is also common for people to be missing many of the disease specific variables except `IBS_FAM` but it's clear that there is a good explanation for why this might be in terms of missing. 
 
 ### A new geom 
 
@@ -204,7 +315,7 @@ plot(scatter_plot_miss)
 ## (`geom_point()`).
 ```
 
-![](missing_data_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+![](missing_data_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
 
 
 ``` r
@@ -214,7 +325,7 @@ scatter_plot_no_miss <- ggplot(data, aes(x = SDC_AGE_CALC, y = PA_TOTAL_SHORT)) 
 plot(scatter_plot_no_miss)
 ```
 
-![](missing_data_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
+![](missing_data_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 There are missing across the entire association but it looks like perhaps fewer missing among people who are older than 70. 
 
@@ -318,7 +429,7 @@ plot(density_mean_imp)
 ## (`stat_density()`).
 ```
 
-![](missing_data_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](missing_data_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 When we input the mean we don't change the mean so it's not really worth looking at differences in the mean. But we look at the median we can see differences. Also, I plotted the imputed data `PA_TOTAL_SHORT` and the not imputed data `pa_not_imputed`. We can see they are almost identical but there are values imputed with the mean for `PA_TOTAL_SHORT`. 
 
@@ -405,7 +516,7 @@ plot(density_imp)
 ## (`stat_density()`).
 ```
 
-![](missing_data_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+![](missing_data_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
 
 ### Variable types
 
@@ -445,7 +556,7 @@ plot(density_imp_asthma)
 ## (`stat_density()`).
 ```
 
-![](missing_data_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+![](missing_data_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
 
 Slightly harder to visualize but we can see that there is now a small imputation effect at 0.2 that was not there before. Let's convert this to factor and try again. 
 
@@ -595,84 +706,226 @@ miss_var_summary(data_pa)
 ## 4 SDC_AGE_CALC         0     0
 ```
 
+### m and maxit? 
 
+A critical part of `mice` and imputation in general is that it's not deterministic for more complex models. If you run the an imputation model once, and the run it again, you will not get the same answer. This is both good, because be can account for the uncertainty in our imputations but also a challenge because we need to use methods to pool the results of multiple different imputations + regressions to get our estiamte of interest. 
 
-https://amices.org/Winnipeg/Practicals/Practical_I.html
+Let's look at m and maxit from the documentation
 
-
-
-https://amices.org/mice/ 
-
-Some examples for impute_mean are now given:
-
-### Other ways R encodes missing(ish) data
-
-#### NaN and Inf are related to NA.
-
-##### NaN
-
-NaN represents `Not a Number`. NaN can be generated, for example, by taking the log of a negative number. They can be tested for with is.nan()
+* m: Number of multiple imputations. The default is m=5.
+* maxit: A scalar giving the number of iterations. The default is 5.
 
 
 ``` r
-x <- log(c(1, -1, NA))
+mice_2 <- mice(data_pa, m = 5, maxit = 5) ### m = 5 is the default. If you don't specify it will estimate 5 models. 
 ```
 
 ```
-## Warning in log(c(1, -1, NA)): NaNs produced
+## 
+##  iter imp variable
+##   1   1  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   1   2  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   1   3  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   1   4  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   1   5  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   2   1  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   2   2  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   2   3  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   2   4  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   2   5  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   3   1  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   3   2  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   3   3  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   3   4  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   3   5  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   4   1  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   4   2  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   4   3  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   4   4  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   4   5  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   5   1  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   5   2  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   5   3  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   5   4  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+##   5   5  PA_TOTAL_SHORT  DIS_ASTHMA_EVER
+```
+
+```
+## Warning: Number of logged events: 1
 ```
 
 ``` r
-x
+mice_2$method
 ```
 
 ```
-## [1]   0 NaN  NA
+##              ID  PA_TOTAL_SHORT    SDC_AGE_CALC DIS_ASTHMA_EVER 
+##              ""           "pmm"              ""       "polyreg"
 ```
 
 ``` r
-is.nan(x)
+mice_2_long <- complete(mice_2, action = "long")
+mice_2_long$.imp <- as.factor(mice_2_long$.imp)
+
+plot(mice_2)
 ```
 
-```
-## [1] FALSE  TRUE FALSE
+![](missing_data_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+
+``` r
+density_m_5 <- ggplot(mice_2_long, aes(x = PA_TOTAL_SHORT, colour = .imp)) +
+                geom_density()
+plot(density_m_5)
 ```
 
-##### Inf
+![](missing_data_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
 
-Inf and -Inf represent positive and negative infinite numbers respectively. These can be generated, for example, by dividing by zero, and tested for with is.infinite()
+If we run this command again we won't necessarily get the same results again. If we want our results to be reproducible we need to `set.seed()` to give a starting value to the process and ensure reproducibility. This can be any number really. 
+
+### Accounting for uncertainty in regression
+
+Now have an imputation model with some uncertainty and we want to get a pooled regression result the also accounts for the uncertainty. If we wanted to could just take our result from the imputation model with `m = 1` and use that for a regression model but we would not be accounting for the uncertainty of the imputed data (we will be doing this in the class) but you are going to have to read and make informed decisions about how appropriate this may or may not be depending on your data, how you think the missing data are created, and whether accounting for uncertainty of the models (pooling) is possible with the type of model you are using.
+
+#### Using imputed data
+
+> Quite often people are suggesting that using the average imputed dataset - so taking the average over the imputed data set such that any realized cell depicts the average over the corresponding data in the imputed data - would be efficient. This is not true. Doing this will yield false inference. The average workflow is faster and easier than the correct methods, since there is no need to replicate the analyses m times. In the words of Dempster and Rubin (1983), this workflow is seductive because it can lull the user into the pleasurable state of believing that the data are complete after all. The ensuing statistical analysis does not know which data are observed and which are missing, and treats all data values as real, which will underestimate the uncertainty of the parameters. The reported standard errors and p-values after data-averaging are generally too low. The correlations between the variables of the averaged data will be too high. For example, the correlation matrix in the average data are more extreme than the average of the m correlation matrices, which is an example of ecological fallacy. As researchers tend to like low p-values and high correlations, there is a cynical reward for the analysis of the average data. However, analysis of the average data cannot give a fair representation of the uncertainties associated with the underlying data, and hence is not recommended.
+
+Now, let's say we want to predict PA using asthma as a variable. 
 
 
 ``` r
-y <- c(-Inf, 0, Inf)
-is.infinite(y)
+set.seed(123)
+
+## Typical regression 
+pa_asthma <- lm(PA_TOTAL_SHORT ~ DIS_ASTHMA_EVER, data = data_pa)
+summary(pa_asthma)
 ```
 
 ```
-## [1]  TRUE FALSE  TRUE
+## 
+## Call:
+## lm(formula = PA_TOTAL_SHORT ~ DIS_ASTHMA_EVER, data = data_pa)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -2626.3 -1968.0  -790.3  1164.0 16710.0 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       2568.02      15.57 164.939   <2e-16 ***
+## DIS_ASTHMA_EVER1    58.32      43.14   1.352    0.176    
+## DIS_ASTHMA_EVER2  -166.76     147.79  -1.128    0.259    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2654 on 33723 degrees of freedom
+##   (7461 observations deleted due to missingness)
+## Multiple R-squared:  9.553e-05,	Adjusted R-squared:  3.623e-05 
+## F-statistic: 1.611 on 2 and 33723 DF,  p-value: 0.1997
 ```
 
-#### Comparison of missing types
+``` r
+## Pooled regression 
+pa_asthma_miss <- mice_2 %>% with(lm(PA_TOTAL_SHORT ~ DIS_ASTHMA_EVER))
+summary(pa_asthma_miss)
+```
 
-The test is.finite() it TRUE if the value is numeric and not NA, NaN, Inf or -Inf.
+```
+## # A tibble: 15 × 6
+##    term             estimate std.error statistic      p.value  nobs
+##    <chr>               <dbl>     <dbl>     <dbl>        <dbl> <int>
+##  1 (Intercept)        2568.       14.3   179.    0            41187
+##  2 DIS_ASTHMA_EVER1     71.5      38.9     1.84  0.0661       41187
+##  3 DIS_ASTHMA_EVER2    145.       69.7     2.08  0.0371       41187
+##  4 (Intercept)        2515.       14.4   175.    0            41187
+##  5 DIS_ASTHMA_EVER1     96.9      39.1     2.48  0.0132       41187
+##  6 DIS_ASTHMA_EVER2    389.       70.0     5.56  0.0000000268 41187
+##  7 (Intercept)        2539.       14.2   179.    0            41187
+##  8 DIS_ASTHMA_EVER1     82.6      38.6     2.14  0.0321       41187
+##  9 DIS_ASTHMA_EVER2     23.4      69.2     0.338 0.735        41187
+## 10 (Intercept)        2570.       14.2   181.    0            41187
+## 11 DIS_ASTHMA_EVER1     27.2      38.6     0.705 0.481        41187
+## 12 DIS_ASTHMA_EVER2    -67.0      69.1    -0.969 0.332        41187
+## 13 (Intercept)        2563.       14.3   179.    0            41187
+## 14 DIS_ASTHMA_EVER1     13.9      38.9     0.358 0.720        41187
+## 15 DIS_ASTHMA_EVER2    -27.6      69.7    -0.396 0.692        41187
+```
 
-| value |	is.na |	is.nan |	is.infinite |	is.finite |
-| ----- | ------ | ------ | ------ |
-| 1 	| FALSE |	FALSE |	FALSE |	TRUE
-| NA 	| TRUE |	FALSE |	FALSE |	FALSE
-| NaN |	TRUE |	TRUE |	FALSE |	FALSE
-| Inf |	FALSE |	FALSE |	TRUE |	FALSE
-| -Inf |	FALSE |	FALSE |	TRUE |	FALSE
+`with` function: Evaluate an R expression in an environment constructed from data, possibly modifying (a copy of) the original data.
+
+Here we get the regression results of the 5 different regression because m = 5. We can pool those results (with uncertainty) using the `pool` function which computes the total variance over the repeated analyses by Rubin's rules (Rubin, 1987, p. 76).
 
 
-https://cran.r-project.org/web/views/MissingData.html
+``` r
+pa_asthma_miss_pooled <- pool(pa_asthma_miss)
+summary(pa_asthma_miss_pooled)
+```
 
-https://cran.r-project.org/web/packages/naniar/vignettes/getting-started-w-naniar.html
+```
+##               term   estimate std.error statistic        df      p.value
+## 1      (Intercept) 2551.01787  29.25581 87.196978  6.893332 9.529931e-12
+## 2 DIS_ASTHMA_EVER1   58.43972  55.36115  1.055609 15.458121 3.073667e-01
+## 3 DIS_ASTHMA_EVER2   92.64383 213.22283  0.434493  5.003410 6.820302e-01
+```
 
-https://towardsdatascience.com/smart-handling-of-missing-data-in-r-6425f8a559f2
+``` r
+summary(pa_asthma)
+```
 
-https://cran.r-project.org/web/packages/missCompare/vignettes/misscompare.html
+```
+## 
+## Call:
+## lm(formula = PA_TOTAL_SHORT ~ DIS_ASTHMA_EVER, data = data_pa)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -2626.3 -1968.0  -790.3  1164.0 16710.0 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       2568.02      15.57 164.939   <2e-16 ***
+## DIS_ASTHMA_EVER1    58.32      43.14   1.352    0.176    
+## DIS_ASTHMA_EVER2  -166.76     147.79  -1.128    0.259    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2654 on 33723 degrees of freedom
+##   (7461 observations deleted due to missingness)
+## Multiple R-squared:  9.553e-05,	Adjusted R-squared:  3.623e-05 
+## F-statistic: 1.611 on 2 and 33723 DF,  p-value: 0.1997
+```
 
-https://biostats-r.github.io/biostats/workingInR/050_missing_values.html
+Here we get quite different results from when we don't deal with missing data. 
 
-https://epirhandbook.com/new_pages/missing_data.html
+1. 7461 observations (~ 18%) of the data are deleted due to missing. 
+2. In the pooled model the standard error is correctly estimated and is very large. If we just took the imputed data with `m = 1` the standard error (and thus p value and CI) would be incorrectly estimated. 
+
+* van Buuren, S. (2018). Flexible Imputation of Missing Data, Second Edition (2nd ed.). Chapman and Hall/CRC. [https://doi.org/10.1201/9780429492259](https://doi.org/10.1201/9780429492259)
+
+### All the data! 
+
+Let's try mice on all of the data and see what happens. First, we have to fix our data because there's still lots of numeric in there. 
+
+
+``` r
+data <- data %>% mutate_at(3, factor)
+data <- data %>% mutate_at(5:12, factor)
+data <- data %>% mutate_at(14:81, factor)
+data <- data %>% mutate_at(83:93, factor)
+
+# mice_all <- mice(data, method = "cart", m = 1, maxit = 1) ### NOT RUN Takes 2 days to run this
+# mice_all$method
+
+# mice_all_imp <- complete(mice_all)
+# write_csv(mice_all_imp, "mice_all_imp.csv")
+```
+
+> Imputation of categorical data is more difficult than continuous data. As a rule of thumb, in logistic regression we need at least 10 events per predictor in order to get reasonably stable estimates of the regression coefficients (Van Belle 2002, 87). So if we impute 10 binary outcomes, we need 100 events, and if the events occur with a probability of 0.1, then we need n>1000 cases. If we impute outcomes with more categories, the numbers rapidly increase for two reasons. First, we have more possible outcomes, and we need 10 events for each category. Second, when used as predictor, each nominal variable is expanded into dummy variables, so the number of predictors multiplies by the number of categories minus 1. The defaults logreg, polyreg and polr tend to preserve the main effects well provided that the parameters are identified and can be reasonably well estimated. In many datasets, especially those with many categories, the ratio of the number of fitted parameters relative to the number of events easily drops below 10, which may lead to estimation problems. In those cases, the advice is to specify more robust methods, like pmm, cart or rf. [https://stefvanbuuren.name/fimd/sec-categorical.html#evaluation](https://stefvanbuuren.name/fimd/sec-categorical.html#evaluation)
+
+# Ressources
+
+1. [CRAN Task View for Missing data](https://cran.r-project.org/web/views/MissingData.html)
+2. [Missing Data Workshop with MICE](https://amices.org/Winnipeg/)
+3. [Missing Data with Tidymodels](https://tidymodels.aml4td.org/chapters/missing-data.html)
+4. [Smart Handling of Missing Data](https://towardsdatascience.com/smart-handling-of-missing-data-in-r-6425f8a559f2)
+5. [Epi R Handbook - Missing Data](https://epirhandbook.com/new_pages/missing_data.html)
