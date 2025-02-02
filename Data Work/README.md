@@ -8,7 +8,7 @@ Week |	Data Work |
 2	| [Data Visualization](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/data_visualization.md) | 
 3	| [HappyGitwithR](https://happygitwithr.com/) | | 
 4	| [Missing Data](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/missing_data.md) | 
-5	| [Linear Regression]() |
+5	| [Linear Regression](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/linear_regression.md) |
 6	| [Logistic Regression]() |
 7	| Reading Week	| 
 8	| [Scientific Computing/Big Data]() | 
