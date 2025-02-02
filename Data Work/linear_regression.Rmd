@@ -5,17 +5,14 @@ output:
         keep_md: true
 ---
 
-```{r setup, include=FALSE}
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidymodels)
 library(sjPlot)
+library(psych)
+library(parallel)
 library(finalfit)
-library(knitr)
-library(marginaleffects)
-library(jtools)
-library(emmeans)
-library(lindia)
 library(gtsummary)
 library(mlbench)
 library(vip)
@@ -26,11 +23,10 @@ library(yardstick)
 library(parsnip)
 library(glmnet)
 library(themis)
-library(microbenchmark)
+library(corrr)
 library(performance)
-library(see)
 
-data <- read_csv("can_path_data.csv")
+data <- read_csv("mice_all_imp.csv")
 ```
 
 ## Linear Regression
@@ -45,23 +41,24 @@ Feature selection is an important topic in ML because good predictor requires ma
 
 Our research question is:  
 
-- **What factors are associated with BMI?**
+**What factors are associated with BMI?**
 
-Here we are going to subset our variables because we have lots of related variables and missing. We are going to keep all of the sociodemographic variables `SDC_` and all of the `_EVER` variables that indicated if the person has ever had the given disease or symptom. 
+We have already worked on the imputed data from the missing data class so we are going to use that imputed data here as a starting point for the work. This is partly to save time for the teaching part of the class. Remember from the missing data class that ideally we would
 
-```{r}
-data_working <- data %>% select(ID:HS_GEN_HEALTH, PM_BMI_SR, contains("_EVER"), contains("WRK_"))
-```
+1. Conduct sensitivity analyses with a number of different imputation methods. 
+2. Account for uncertainty using pooled models. 
+
+We are going to skip that for now but I will show an example of how `tidymodels` imputes data later in this doc. 
 
 #### Outcome variable
 
 Let's look at the outcome variable, recode, and drop observations that are not relevant. We need to do a histogram and check the distribution. Then we might deal with outliers.  
 
 ```{r}
-summary(data_working$PM_BMI_SR)
+summary(data$PM_BMI_SR)
 
-bmi_histogram <- ggplot(data = data_working, aes(PM_BMI_SR)) +
-                  geom_histogram()
+bmi_histogram <- ggplot(data = data, aes(PM_BMI_SR)) +
+                  geom_histogram(binwidth = 2)
 plot(bmi_histogram)
 ```
 
@@ -70,16 +67,16 @@ Nice normal(ish) distribution here. We probably have some outliers on the low an
 We can recode people who are less than 10 and greater than 60 to values of 10 and 60 respectively. 
 
 ```{r}
-data_working <- data_working %>%
+data <- data %>%
           mutate(bmi_recode = case_when(
             PM_BMI_SR < 10 ~ 10, 
             PM_BMI_SR > 60 ~ 60,
             TRUE ~ PM_BMI_SR
           ))
-summary(data_working$bmi_recode)
+summary(data$bmi_recode)
 
-bmi_recode_histogram <- ggplot(data = data_working, aes(bmi_recode)) +
-                  geom_histogram()
+bmi_recode_histogram <- ggplot(data = data, aes(bmi_recode)) +
+                  geom_histogram(binwidth = 2)
 plot(bmi_recode_histogram)
 ```
 
@@ -95,18 +92,23 @@ All of the predictors are coded as 0,1,2 are read in as numeric by R so we need 
 We can batch recode all of these variables and make sure that they are factor and not numeric.
 
 ```{r}
-data_working <- data_working %>% mutate(across(contains("_EVER"), as.factor)) # select character columns
-data_working <- data_working %>% mutate(across(contains("WRK_"), as.factor)) # select character columns
+data <- data %>% mutate_at(3, factor)
+data <- data %>% mutate_at(5:6, factor)
+data <- data %>% mutate_at(8:12, factor)
+data <- data %>% mutate_at(14:81, factor)
+data <- data %>% mutate_at(83:93, factor)
 ```
+
+## Recoding
 
 **Age**
 
 ```{r}
-summary(data_working$SDC_AGE_CALC) 
+summary(data$SDC_AGE_CALC) 
 
 ### Checking NA
 
-data_working %>% summarise(
+data %>% summarise(
                   n = n_distinct(SDC_AGE_CALC),
                   na = sum(is.na(SDC_AGE_CALC)
                            ))
@@ -116,11 +118,11 @@ data_working %>% summarise(
 **Income**
 
 ```{r}
-glimpse(data_working$SDC_INCOME)
+glimpse(data$SDC_INCOME)
 
-table(data_working$SDC_INCOME)
+table(data$SDC_INCOME)
 
-data_working <- data_working %>%
+data <- data %>%
 	mutate(income_recode = case_when(
 		SDC_INCOME == 1 ~ "Less than 25 000 $",
 		SDC_INCOME == 2 ~ "Less than 25 000 $",
@@ -132,11 +134,11 @@ data_working <- data_working %>%
 		SDC_INCOME == 8 ~ "200 000 $ or more"
 	))
 
-glimpse(data_working$income_recode)
+glimpse(data$income_recode)
 
-data_working$income_recode <- as_factor(data_working$income_recode)
+data$income_recode <- as_factor(data$income_recode)
 
-data_working$income_recode <- fct_relevel(data_working$income_recode, "Less than 25 000 $", 
+data$income_recode <- fct_relevel(data$income_recode, "Less than 25 000 $", 
                                                           "25 000 $ - 49 999 $",
                                                           "50 000 $ - 74 999 $",
                                                           "75 000 $ - 99 999 $",
@@ -144,20 +146,45 @@ data_working$income_recode <- fct_relevel(data_working$income_recode, "Less than
                                                           "150 000 $ - 199 999 $",
                                                           "200 000 $ or more"
                                           )
-table(data_working$income_recode)
+table(data$income_recode)
 
-table(data_working$income_recode, data_working$SDC_INCOME)
+table(data$income_recode, data$SDC_INCOME)
 ```
 
 ### Preliminary analysis
 
-Correlations 
+#### Correlations 
 
+```{r}
+data1 <- data %>% select(1:10) ### Removing recoded variables so we don't try and regress them on themselves
+
+pairs.panels(data1,
+             scale = FALSE,      # If TRUE, scales the correlation text font
+             method = "spearman", # Correlation method (also "spearman" or "kendall")
+             lm = FALSE,         # If TRUE, plots linear fit rather than the LOESS (smoothed) fit
+             cor = TRUE,         # If TRUE, reports correlations
+             jiggle = FALSE,     # If TRUE, data points are jittered
+             stars = FALSE)       # If TRUE, adds significance level with stars)          
+```
+
+#### Univariable associations
+
+```{r}
+data <- data %>% select(!c(ID, PM_BMI_SR, SDC_INCOME)) ### Removing recoded variables so we don't try and regress them on themselves
+
+univ_table <- data %>%
+  tbl_uvregression(
+    method = glm,
+    y = bmi_recode,
+    method.args = list(family = gaussian)) 
+
+univ_table %>% as_kable()
+```
 
 We want to start by doing bivariable regression on the outcome and each variable. This can a be a bit of a process if we have lots of variables. Here we are using the `glm` (General Linear Model) function. 
 
 ```{r}
-model_income <- glm(bmi_recode ~ income_recode, data = data_working, family = "gaussian")
+model_income <- glm(bmi_recode ~ income_recode, data = data, family = "gaussian")
 summary(model_income)
 
 model_income_table <- tbl_regression(model_income) 
@@ -171,7 +198,7 @@ We always want to look at all of the bivariate associations for each independent
 
 ## Machine Learning - Linear Regression 
 
-In a machine learning approach, in general, our interest is less on the specific associations we see between individual variables and the outcome and more on the overall performance of the model in terms of predicting the outcome. You might remember this like AIC, BIC, or -2Log-Likelihood, or Pseudo-R2 for model fit in logistic regression. In ML, another key concept is model performance on unseen data. With the biostatistics approach, we want to know if the model fits some known distriution (think linear regression) but with ML we don't really care about that, we care about model performance with unseen data. Hopefully, that will sense later. 
+In a machine learning approach, in general, our interest is less on the specific associations we see between individual variables and the outcome and more on the overall performance of the model in terms of predicting the outcome. We can assess this with R2 or RMSE. In ML, another key concept is model performance on unseen data. With the biostatistics approach, we want to know if the model fits some known distribution (think linear regression) but with ML we don't really care about that, we care about model performance with unseen data. Hopefully, that will sense later. 
 
 ### Resampling (Part 1)
 
@@ -182,7 +209,7 @@ More machine learning we need a way to split the data into a training set and a 
 # This enables the analysis to be reproducible when random numbers are used 
 set.seed(10)
 
-data_split <- initial_split(data_working, prop = 0.70)
+data_split <- initial_split(data, prop = 0.70)
 
 # Create data frames for the two sets:
 train_data <- training(data_split)
@@ -196,13 +223,19 @@ Now we have split the data, we want to create the model for the training data an
 
 ### 3.2 Running the regression
 
-```{r}
-glimpse(data_working)
+We need to decide what variables are going to go in our model. We could use traditional methods 
 
-linear_model <- linear_reg() %>%
+* Forward selection
+* Backward selection
+* Direct Acyclic Graphs
+
+Here we are going to use Lasso and Ridge regression techniques, which are more akin to ML types of approaches. But first, let's just run a model with a few variables to show testing and training. 
+
+```{r}
+lm_simple <- linear_reg() %>%
         set_engine("glm") %>%
         set_mode("regression") %>%
-        fit(bmi_recode ~ income_recode + WRK_RETIREMENT + SDC_AGE_CALC, data = train_data)
+        fit(bmi_recode ~ SDC_GENDER + SDC_AGE_CALC + SDC_EDU_LEVEL_AGE + SDC_HOUSEHOLD_CHILDREN_NB + HS_GEN_HEALTH + DIS_DIAB_EVER, data = train_data)
 ```
 
 ### 3.3 Test the trained model
@@ -212,7 +245,7 @@ Once we `train the model` we want to understand how well our trained model works
 The code below outputs the predict class `diabetes (yes/no)` for the test data. 
 
 ```{r}
-pred_bmi <- predict(linear_model,
+pred_bmi <- predict(lm_simple,
                       new_data = test_data)
 summary(pred_bmi$.pred)
 summary(test_data$bmi_recode)
@@ -227,11 +260,6 @@ pred_true <- test_data |>
   select(bmi_recode) |>
   bind_cols(pred_bmi)
 
-
-ggplot(data = pred_true, aes(x = bmi_recode, y = .pred)) + 
-        geom_point(alpha = 0.2) +
-        geom_smooth(method = "lm")
-
 head(pred_true)
 ```
 
@@ -242,237 +270,241 @@ Here we can see the first 6 rows of data. The model predicts some people with NA
 There are a number of different methods we must use to evaluate machine learning models. We will walk through those. 
 
 ```{r}
-linear_model |> 
+lm_simple |> 
   extract_fit_engine() |> 
   check_model()
 ```
 
-#### Confusion Matrix
+#### Root Mean Squared Error
 
-We can generate a confusion matrix by using the `conf_mat()` function by supplying the final data frame (`diabetes_results`), the truth column `diabetes_t2` and predicted class `.pred_class` in the estimate attribute.
+We can calculate the MAE (Mean absolute error) and RMSE (Root Mean Squared Error), which is typically reported in linear models for ML. 
 
-A confusion matrix is sort of a 2x2 table with the true values on one side and predicted values in another column. If we look on the diagonal we see when the model correctly predicts the values `yes/no` and off diagonal is when the model does not predict the correct value. So this model correctly predicts that 4075 cases of diabetes and incorrectly predicts that 212 people do not have diabetes when they do have it. The model correctly predicts 4 cases of diabetes. It also incorrectly predicts that two people who do not have diabetes do have diabetes. 
+* MAE: Is a metric that tells us the mean absolute difference between the predicted values and the actual values in a dataset. The lower the MAE, the better a model fits a dataset.
+* RMSE: Is a metric that tells us the square root of the average squared difference between the predicted values and the actual values in a dataset. The lower the RMSE, the better a model fits a dataset.
 
-```{}
-conf_mat(diabetes_results, truth = diabetes_t2,
-         estimate = .)
+```{r}
+rsq(pred_true, truth = bmi_recode,
+         estimate = .pred)
 ```
 
-#### Accuracy
-
-We can calculate the classification accuracy by using the `accuracy()` function by supplying the final data frame `diabetes_results`, the truth column `diabetes_t2` and predicted class `.pred_class` in the estimate attribute. The model classification accuracy on test dataset is about ~94%. This looks good but it's a bit of fake result as we will see later. 
-
-```{}
-accuracy(diabetes_results, truth = bmi_recode,
-         estimate = .pred_class)
+```{r}
+rmse(lm_simple, truth = bmi_recode,
+         estimate = .pred)
 ```
 
-#### Sensitivity
+## Tidymodels 
 
-The sensitivity (also known as __Recall__) of a classifier is the ratio between what was correctly identified as positive (True Positives) and all positives (False Negative + True Positive).
+We have started using `tidymodels` but we are going to get into a bit more detail now. Tidymodels uses a 4(ish) step process to make the process of running models, selecting variables, model tuning, and getting results relatively easy. This is different from what you will see in the Intro to Stat learning book. Both are fine, but Tidymodels makes the variable selection, tuning, and visualization process much, much easier. 
 
-__Sensitivity = TP / FN + TP__
+### Data splitting 
 
-The sensitivity value is 1.0 indicating that we are able to correctly detect 100% of the positive values.  
+We already saw the data splitting part as well. 
 
 ```{}
-sens(diabetes_results, truth = diabetes_t2,
-    estimate = .pred_class)
+# Fix the random numbers by setting the seed 
+# This enables the analysis to be reproducible when random numbers are used 
+set.seed(10)
+
+data_split <- initial_split(data, prop = 0.70)
+
+# Create data frames for the two sets:
+train_data <- training(data_split)
+summary(train_data$bmi_recode)
+
+test_data  <- testing(data_split)
+summary(test_data$bmi_recode)
 ```
 
-#### Specificity
+### Models
 
-Specificity of a classifier is the ratio between what was classified as negative (True Negatives) and all negative values (False Positive + True Native)
+We already saw the model building stuff above. Here we use the tidy models to setup a model using `glm` and `regression` and we call the specific model we want to fit. 
 
-__Specificity = TN / FP + TN__
-
-The specificity value is 0.004. Meaning that we correctly classify 0.4% of the negative values, which is pretty terrible. 
-
-```{}
-spec(diabetes_results, truth = diabetes_t2,
-    estimate = .pred_class)
+```{r}
+linear_model <- linear_reg() %>%
+        set_engine("glm") %>%
+        set_mode("regression")
 ```
 
-#### Precision
+### Recipes 
 
-What percent of values are correctly classified as positive (True Positives) out of all positives (True Positive + False Positive)?
+The recipe() function as we used it here has two arguments
 
-__Precision = TP / TP + FP__
+1. A formula. Any variable on the left-hand side of the tilde (~) is considered the model outcome (here, arr_delay). On the right-hand side of the tilde are the predictors. Variables may be listed by name, or you can use the dot (.) to indicate all other variables as predictors.
+2. The data. A recipe is associated with the data set used to create the model. This will typically be the training set, so data = train_data here. Naming a data set doesn’t actually change the data itself; it is only used to catalog the names of the variables and their types, like factors, integers, dates, etc.
 
-The precision is 0.94, meaning we identify 81.8% of true positives compared to all positives. 
+Now we can add roles to this recipe. We can use the update_role() function to let recipes know that `ADM_STUDY_ID` is a variable with a custom role that we called "ID" (a role can have any character value). Whereas our formula included all variables in the training set other than bmi_recode as predictors (that's what the `.` does), this tells the recipe to keep these two variables but not use them as either outcomes or predictors.
 
-```{}
-precision(diabetes_results, truth = diabetes_t2,
-    estimate = .pred_class)
+```{r}
+bmi_recipe <- 
+  recipe(bmi_recode ~ ., data = train_data) %>% 
+  update_role(ADM_STUDY_ID, new_role = "ID") %>% 
+  step_dummy(all_nominal_predictors()) %>% ### One hot encoding. Dramatically improves model performance with many factors
+  step_zv(all_predictors()) ### Remove columns from the data when the training set data have a single value. Zero variance predictor
+
+summary(bmi_recipe)
 ```
 
-#### F-Score
+### Workflow
 
-F-score is the mean of precision and sensitivity. The value ranges from 1 (the best score) and 0 (the worst score). F-score gives us the balance between precision and sensitivity. The F1 score is about 0.97, which indicates that the trained model has a classification strength of 97%.
+A workflow connects our recipe with out model. The workflow let's us setup the models without actually have run things over and over again. This is helpful because as you will sometimes models can take a long time to run. 
 
-```{}
-f_meas(diabetes_results, truth = diabetes_t2,
-       estimate = .pred_class)
+```{r}
+bmi_workflow <- 
+        workflow() %>% 
+        add_model(linear_model) %>% 
+        add_recipe(bmi_recipe)
+
+bmi_workflow
 ```
 
-#### ROC Curve
+### Fit a model 
 
-The ROC curve is plotted with `sensitivity` against `1 - Specificity`, where `sensitivity` is on the y-axis and `1 - Specificity` is on the x-axis. A line is drawn diagonally to denote 50–50 partitioning of the graph. If the curve is more close to the line, lower the performance of the classifier, which is no better than a mere random guess.
-
-You can generate a ROC Curve using the `roc_curve()` function where you need to supply the truth column `diabetes_t2` and predicted probabilities for the positive class `.pred_pos`.
-
-Our model has got a ROC-AUC score of 0.227 indicating a good model that cannot distinguish between patients with diabetes and no diabetes.
-
-```{}
-roc_auc(diabetes_results,
-        truth = diabetes_t2,
-        .pred_0)
-
-roc_curve <- diabetes_results %>%
-  roc_curve(truth = diabetes_t2, .pred_0) %>%
-  autoplot()
-
-plot(roc_curve)
-```
-
-#### All the metrics 
-
-We can produce all of the metrics using the `metric_set` function. 
-
-```{}
-metrics <- metric_set(accuracy, sens, spec, precision, recall, f_meas)
-
-all_metrics_lr <- metrics(diabetes_results,
-               truth = diabetes_t2,
-               estimate = .pred_class)
-               
-kable(all_metrics_lr)
-```
-
-#### Feature Importance
-
-Feature importance is the one way that ML models examine which variables are important to the predictions overall. It's not super common to see, except for people like Epi folks who think about specific associations between variables. 
-
-```{}
-coeff <- tidy(logistic_model) %>% 
-  arrange(desc(abs(estimate))) %>% 
-  filter(abs(estimate) > 0.5)
-
-kable(coeff)
-```
-
-#### Plot of feature importance
-
-```{}
-ggplot(coeff, aes(x = term, y = estimate, fill = term)) + geom_col() + coord_flip()
-```
-
-#### 3.4 Model interpretation
-
-So now we have to interpret the model. General guidelines to think about the bias variance trade off and weather our model performs well. Based on the evaluation metrics how do we fell about this model? 
-Typically in ML types of problems a model with less than 80-90% accuracy is consider ok, but it depends a bit on the problem. Our model has an accuracy of 95%... maybe that's good. HOWEVER, when we look at the sensitivity it's 1 and the specificity is 0.4%. A sensitivity of 1 (perfect) is suspect and our specificity is very very bad.
-
-Overall, this model is not very good. We don't have a sufficient number of features (variables) to do a good job with prediction. We have a high bias, our model underfits the data. The variance is also high. 
-
-### 3.5. Up-Sampling
-
-OK. So our model is terrible. There are a number of reasons for this that we are going to explore now. These are standard machine learning explorations that we would normally do as part of machine learning analysis workflow. First, we are going to explore up-sampling. One of the main problems with the diabetes data we have is the prevalence of diabetes is relatively low in the dataset. This is good normally in biostatistics approaches as we want the OR to approximate the RR in a case control study. BUT that's terrible for prediction. 
-
-One thing that we can do is up-scale the lowest class (or classes) or the outcome variable. There are a bunch of different methods to do this and we are using the `themis` package [https://themis.tidymodels.org/reference/index.html](https://themis.tidymodels.org/reference/index.html). Here we are using the `step_upsample()` function. We only want to use the up scaling methods on the training set. We don't use it on the test set because that would create a false model performance. 
-
-#### Up-scaling Example
-
-```{}
-### Showing the distribution of diabetes (yes/no) in the real data
-table(train_data$diabetes_t2)
-
-ggplot(train_data) + 
-    geom_bar(aes(diabetes_t2))
-
-### Creating a recipe were we upsample the diabetes yes category to be 50% of the diabetes no category. This is an arbitrary number and you will need to play with this.
-
-
-
-diabetes_rec_oversamp <- 
-  recipe(diabetes_t2 ~ ., data = train_data) %>%
-  step_upsample(diabetes_t2, over_ratio = 0.5) %>%
-  step_unknown() %>%
-  step_dummy(all_nominal_predictors()) 
-
-### Visualization of the 30% ratio
-recipe(~., train_data) %>%
-  step_upsample(diabetes_t2, over_ratio = 0.5) %>%
-  prep() %>%
-  bake(new_data = NULL) %>%
-  ggplot(aes(diabetes_t2)) +
-  geom_bar()
-```
-
-Here we upscale the `diabetes-Yes` category to 50% of the of the `diabetes-No` category. The figures show the differences but we go from 1514 cases of diabetes in the training set to over ~12000 cases of diabetes. 
-
-**Up-scaling regression**
-
-Setup the recipe and metrics. Here we are specifying the model we want to use. 
-
-```{}
-logistic_m <- logistic_reg(
-                mode = "classification",
-                engine = "glm"
-              )
-```
-
-Logistic regression results based on up-scaling. Here we setup the workflow. A workflow must includ the following
-
-* A Recipe `add_recipe` which is how we tell the workflow to process the data. 
-* A Model `add_model` which specifies the model paramaters
-
-Once we save the workflow we can run the same model in different ways. More on this later. 
-
-```{}
-diabetes_wflow_oversamp <- 
-  workflow() %>% 
-  add_model(logistic_m) %>% 
-  add_recipe(diabetes_rec_oversamp)
-
-diabetes_wflow_oversamp
-```
-
-Now we will actually fit the model to the data using the recipe and `fit` command. 
-
-```{}
-diabetes_fit_oversamp <- 
-  diabetes_wflow_oversamp %>% 
+```{r}
+bmi_fit <- 
+  bmi_workflow %>% 
   fit(data = train_data)
 ```
 
-```{}
-diabetes_fit_oversamp %>% 
+
+```{r}
+bmi_fit %>% 
   extract_fit_parsnip() %>% 
   tidy()
-
-diabetes_aug_oversamp <- 
-  augment(diabetes_fit_oversamp, test_data)
-
-diabetes_fit_oversamp_all_metrics <- metrics(diabetes_aug_oversamp,
-               truth = diabetes_t2,
-               estimate = .pred_class)
-               
-kable(diabetes_fit_oversamp_all_metrics)
 ```
 
-Here we have dramatically improved our specificity from 0.004 to 0.28. Overall, our accuracy and other metrics have gone down... which is good. This model is much better and less suspect than our previous model. Our up-sampling has done well here. We could test more up-sampling but you get the idea here. 
+### Predict on new data
 
-```{}
-kable(all_metrics_lr)
+```{r}
+bmi_predicted <- augment(bmi_fit, test_data)
 ```
 
-### 3.6. Resampling (part 2)
+### Ridge and lasso regression
+
+We have run basic model with all variables but maybe that's too slow and maybe it's overfitting the data and we want to use a different approach for model selection. We can use ridge and lasso regression (as discussed in the slides). We already have our workflow and recipe from tidymodels so all we need to change is your regression part of the tidymodels section and we run a ridge regression. We can't use `glm` for the this as it does not support these methods. We need to change the engine to `glmnet`. 
+
+Here sort of randomly set the penalty for the ridge model but that's just to give us an example. We will tune the penalty a bit later. The code for this is mostly based from [https://juliasilge.com/blog/lasso-the-office/](https://juliasilge.com/blog/lasso-the-office/) this tutorial, with some modifications for explanability and because some functions are depricated. 
+
+```{r}
+ridge_model <- linear_reg(penalty = 0.1, mixture = 0) %>%  ### mixture = 0 is ridge, mixture = 1 is lasso. 
+  set_engine("glmnet")
+
+ridge_workflow <- workflow() %>%
+  add_recipe(bmi_recipe)
+
+ridge_fit <- ridge_workflow %>%
+  add_model(ridge_model) %>%
+  fit(data = train_data)
+
+ridge_fit %>%
+        extract_fit_parsnip() %>%
+        tidy()
+```
+
+### Tunning the penalty. 
+
+So we fit one lasso model, but how do we know the right regularization parameter penalty? We can figure that out using resampling and tuning the model. Let’s build a set of bootstrap resamples, and set penalty = tune() instead of to a single value. We can use a function penalty() to set up an appropriate grid for this kind of regularization model.
+
+First, we need to setup the bootstrap for the training data to be able to easily run multiple iterations of the model. Here instead of giving a fixed penalty value `penalty = 0.1` like we did above. We are going to get that value to `tune()` so we can run a number of different iterations of the penatly value and see which one is best. We are going to use a regular grid for this with 25 different iterations of the tuning. 
+
+```{r}
+set.seed(123)
+data_boot <- bootstraps(train_data)
+
+tune_penalty_ridge <- linear_reg(penalty = tune(), mixture = 0) %>%
+  set_engine("glmnet")
+
+lambda_grid <- grid_regular(penalty(), levels = 25) 
+```
+
+Here we are going to run the model 25 times with different penalty values. That's computationally expenvise so let's do this in parallel. 
+
+```{r}
+detectCores()
+doParallel::registerDoParallel()
+
+set.seed(123)
+ridge_grid_tune <- tune_grid(
+                ridge_workflow %>% 
+                  add_model(tune_penalty_ridge),
+                  resamples = data_boot,
+                  grid = lambda_grid
+                )
+
+```
+
+Let's pull the results and see what we get
+
+```{r}
+ridge_grid_tune %>%
+  collect_metrics()
+```
+
+We can visulize the tuning based on this code 
+
+```{r}
+ridge_grid_tune %>%
+  collect_metrics() %>%
+  ggplot(aes(penalty, mean, color = .metric)) +
+  geom_errorbar(aes(
+    ymin = mean - std_err,
+    ymax = mean + std_err
+  ),
+  alpha = 0.5
+  ) +
+  geom_line(linewidth = 1.5) +
+  facet_wrap(~.metric, scales = "free", nrow = 2) +
+  scale_x_continuous(labels = ~ format(.x, scientific = FALSE))
+  theme(legend.position = "none")
+```
+
+We can see from the models that the models are getting better with more penalty. The best models have a penalty close to 1. We can get the results of the best models in terms of penalty by lowest RMSE and and rerun the model again with only that model with the lowest RMSE. 
+
+```{r}
+lowest_rmse_ridge <- ridge_grid_tune %>%
+                        select_best(metric = "rmse")
+
+final_ridge_model_workflow <- finalize_workflow(
+                    ridge_workflow %>% 
+                    add_model(tune_penalty_ridge),
+                    lowest_rmse_ridge
+                  )
+
+
+```
+
+### Variable importance 
+
+```{r}
+final_ridge_model <- final_ridge_model_workflow %>%
+                        fit(data = train_data)
+
+final_ridge_model %>%
+        extract_fit_parsnip() %>%
+        tidy()
+
+vip(final_ridge_model, num_features = 20)
+```
+
+### Final model on testing data 
+
+# WRITE ME
+
+
+### Final model 
+
+let’s return to our test data. The tune package has a function last_fit() which is nice for situations when you have tuned and finalized a model or workflow and want to fit it one last time on your training data and evaluate it on your testing data. You only have to pass this function your finalized model/workflow and your split.
+
+```{r}
+last_fit(final_ridge_model_workflow, data_split)  %>%
+                    collect_metrics()
+```
+
+## Cross validation 
 
 So we know that the up-scaling worked well to improve the model. Another thing we always want to test with an ML model is using a different type of resampling (validation) approach. Originally, we used a 70/30 split in the data, which is not the optimal approach. A better general approach is k-fold cross validation. This approach is very common. There is some discussion of a bunch of other approaches here [https://www.stepbystepdatascience.com/ml-with-tidymodels](https://www.stepbystepdatascience.com/ml-with-tidymodels).
 
 Here we will use our new up-scaled data and apply 10 fold cross-validation approach. We have already set the seed for the analysis in line 105. Setting that will make sure that we get a reproducible result. This resmapling approach 
 
 ![](https://static.wixstatic.com/media/ea0077_8bf9cf19b5ce4f24816ac8d7a1da00fd~mv2.png/v1/fill/w_804,h_452,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/Resampling_PNG.png)
-
 
 
