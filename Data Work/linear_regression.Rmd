@@ -504,7 +504,11 @@ So we know that the up-scaling worked well to improve the model. Another thing w
 Here we will use our new up-scaled data and apply 10 fold cross-validation approach. We have already set the seed for the analysis in line 105. Setting that will make sure that we get a reproducible result. This resmapling approach 
 
 ![](https://static.wixstatic.com/media/ea0077_8bf9cf19b5ce4f24816ac8d7a1da00fd~mv2.png/v1/fill/w_804,h_452,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/Resampling_PNG.png)
+## Session Info
+
+```{r}
+sessionInfo()
+```
 
 
-session_info()
 
