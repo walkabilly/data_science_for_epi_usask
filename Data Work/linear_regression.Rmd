@@ -96,7 +96,7 @@ We can batch recode all of these variables and make sure that they are factor an
 data <- data %>% mutate_at(3, factor)
 data <- data %>% mutate_at(5:6, factor)
 data <- data %>% mutate_at(8:12, factor)
-data <- data %>% mutate_at(14:81, factor)
+data <- data %>% mutate_at(15:81, factor)
 data <- data %>% mutate_at(83:93, factor)
 ```
 
@@ -332,6 +332,18 @@ The recipe() function as we used it here has two arguments
 2. The data. A recipe is associated with the data set used to create the model. This will typically be the training set, so data = train_data here. Naming a data set doesn’t actually change the data itself; it is only used to catalog the names of the variables and their types, like factors, integers, dates, etc.
 
 Now we can add roles to this recipe. We can use the update_role() function to let recipes know that `ADM_STUDY_ID` is a variable with a custom role that we called "ID" (a role can have any character value). Whereas our formula included all variables in the training set other than bmi_recode as predictors (that's what the `.` does), this tells the recipe to keep these two variables but not use them as either outcomes or predictors.
+
+### 3.5. Transforming features (variables)
+
+In machine learning these is a lot of emphasis placed on data pre-processing. Here we are going to talk about two approaches that you are probably familiar with but not in the machine learning context. Normalization/Standardization and creating one-hot encoding/dummy variables. 
+
+#### Normalization/Standardization
+
+Common practice in ML is normalize/standardize/z-score all of the continuous variables in a model. This creates variables with a mean of 0 and a standard deviation of 1. Doing this makes the specific coefficients of the association between the feature and outcome less interpretable BUT it helps a lot with model convergence and speed. Having continuous variables on lots of different scales can quickly create problems with model convergence. 
+
+#### One-hot encoding/dummy variables
+
+One-hot encoding or dummy variable coding converts all categorical variables into 0/1 versions of those variables rather than having them as factors with a dataframe. This encoding creates dummy variables from all categorical predictors. This again, speeds up computation time and can help with interpretation. It's not 100% necessary to do this, but you will see that it is common practice and often it's important just to know the words.
 
 ```{r}
 bmi_recipe <- 
