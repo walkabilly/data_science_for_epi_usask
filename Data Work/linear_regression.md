@@ -43,7 +43,7 @@ library(tidymodels)
 ## ✖ dplyr::lag()      masks stats::lag()
 ## ✖ yardstick::spec() masks readr::spec()
 ## ✖ recipes::step()   masks stats::step()
-## • Search for functions across packages at https://www.tidymodels.org/find/
+## • Learn how to get started at https://www.tidymodels.org/start/
 ```
 
 ``` r
@@ -881,8 +881,6 @@ summary(test_data$bmi_recode)
 ##   10.00   23.34   26.58   27.57   30.61   60.00
 ```
 
-[https://quantifyinghealth.com/linear-regression-in-r-tidymodels/](https://quantifyinghealth.com/linear-regression-in-r-tidymodels/)
-
 Now we want to combine all of our results into one dataframe and just do a quick check. 
 
 
@@ -999,6 +997,7 @@ Now we can add roles to this recipe. We can use the update_role() function to le
 bmi_recipe <- 
   recipe(bmi_recode ~ ., data = train_data) %>% 
   update_role(ADM_STUDY_ID, new_role = "ID") %>% 
+  step_normalize(all_numeric_predictors()) %>% ### Mean center and standardize (z-score) the numeric predictors
   step_dummy(all_nominal_predictors()) %>% ### One hot encoding. Dramatically improves model performance with many factors
   step_zv(all_predictors()) ### Remove columns from the data when the training set data have a single value. Zero variance predictor
 
@@ -1042,8 +1041,9 @@ bmi_workflow
 ## Model: linear_reg()
 ## 
 ## ── Preprocessor ────────────────────────────────────────────────────────────────
-## 2 Recipe Steps
+## 3 Recipe Steps
 ## 
+## • step_normalize()
 ## • step_dummy()
 ## • step_zv()
 ## 
@@ -1072,18 +1072,18 @@ bmi_fit %>%
 
 ```
 ## # A tibble: 194 × 5
-##    term                     estimate std.error statistic  p.value
-##    <chr>                       <dbl>     <dbl>     <dbl>    <dbl>
-##  1 (Intercept)            25.8       3.01         8.57   1.10e-17
-##  2 SDC_AGE_CALC            0.00221   0.00667      0.331  7.41e- 1
-##  3 SDC_EDU_LEVEL_AGE       0.00671   0.00444      1.51   1.31e- 1
-##  4 PA_TOTAL_SHORT         -0.0000513 0.0000135   -3.80   1.47e- 4
-##  5 PSE_ADULT_WRK_DURATION  0.00762   0.00433      1.76   7.84e- 2
-##  6 SDC_GENDER_X2           1.70      1.57         1.09   2.77e- 1
-##  7 SDC_MARITAL_STATUS_X2   0.00531   0.157        0.0339 9.73e- 1
-##  8 SDC_MARITAL_STATUS_X3   0.00251   0.238        0.0105 9.92e- 1
-##  9 SDC_MARITAL_STATUS_X4  -0.347     0.204       -1.70   8.90e- 2
-## 10 SDC_MARITAL_STATUS_X5   0.0292    0.161        0.182  8.56e- 1
+##    term                   estimate std.error statistic  p.value
+##    <chr>                     <dbl>     <dbl>     <dbl>    <dbl>
+##  1 (Intercept)            26.0        2.99      8.68   4.15e-18
+##  2 SDC_AGE_CALC            0.0238     0.0720    0.331  7.41e- 1
+##  3 SDC_EDU_LEVEL_AGE       0.0617     0.0408    1.51   1.31e- 1
+##  4 PA_TOTAL_SHORT         -0.137      0.0362   -3.80   1.47e- 4
+##  5 PSE_ADULT_WRK_DURATION  0.0723     0.0411    1.76   7.84e- 2
+##  6 SDC_GENDER_X2           1.70       1.57      1.09   2.77e- 1
+##  7 SDC_MARITAL_STATUS_X2   0.00531    0.157     0.0339 9.73e- 1
+##  8 SDC_MARITAL_STATUS_X3   0.00251    0.238     0.0105 9.92e- 1
+##  9 SDC_MARITAL_STATUS_X4  -0.347      0.204    -1.70   8.90e- 2
+## 10 SDC_MARITAL_STATUS_X5   0.0292     0.161     0.182  8.56e- 1
 ## # ℹ 184 more rows
 ```
 
@@ -1097,6 +1097,8 @@ bmi_predicted <- augment(bmi_fit, test_data)
 ### Ridge and lasso regression
 
 We have run basic model with all variables but maybe that's too slow and maybe it's overfitting the data and we want to use a different approach for model selection. We can use ridge and lasso regression (as discussed in the slides). We already have our workflow and recipe from tidymodels so all we need to change is your regression part of the tidymodels section and we run a ridge regression. We can't use `glm` for the this as it does not support these methods. We need to change the engine to `glmnet`. 
+
+The tuning parameter for the ridge regression is known has a __hyperparameter__. Different types of ML models will have different hyperparameters that you need to tune to make sure that they are optimized for your model. 
 
 Here sort of randomly set the penalty for the ridge model but that's just to give us an example. We will tune the penalty a bit later. The code for this is mostly based from [https://juliasilge.com/blog/lasso-the-office/](https://juliasilge.com/blog/lasso-the-office/) this tutorial, with some modifications for explanability and because some functions are depricated. 
 
@@ -1119,18 +1121,18 @@ ridge_fit %>%
 
 ```
 ## # A tibble: 194 × 3
-##    term                     estimate penalty
-##    <chr>                       <dbl>   <dbl>
-##  1 (Intercept)            25.6           0.1
-##  2 SDC_AGE_CALC            0.00223       0.1
-##  3 SDC_EDU_LEVEL_AGE       0.00718       0.1
-##  4 PA_TOTAL_SHORT         -0.0000528     0.1
-##  5 PSE_ADULT_WRK_DURATION  0.00750       0.1
-##  6 SDC_GENDER_X2          -0.0538        0.1
-##  7 SDC_MARITAL_STATUS_X2   0.00208       0.1
-##  8 SDC_MARITAL_STATUS_X3  -0.0129        0.1
-##  9 SDC_MARITAL_STATUS_X4  -0.339         0.1
-## 10 SDC_MARITAL_STATUS_X5   0.0180        0.1
+##    term                   estimate penalty
+##    <chr>                     <dbl>   <dbl>
+##  1 (Intercept)            25.8         0.1
+##  2 SDC_AGE_CALC            0.0241      0.1
+##  3 SDC_EDU_LEVEL_AGE       0.0660      0.1
+##  4 PA_TOTAL_SHORT         -0.142       0.1
+##  5 PSE_ADULT_WRK_DURATION  0.0711      0.1
+##  6 SDC_GENDER_X2          -0.0538      0.1
+##  7 SDC_MARITAL_STATUS_X2   0.00208     0.1
+##  8 SDC_MARITAL_STATUS_X3  -0.0129      0.1
+##  9 SDC_MARITAL_STATUS_X4  -0.339       0.1
+## 10 SDC_MARITAL_STATUS_X5   0.0180      0.1
 ## # ℹ 184 more rows
 ```
 
@@ -1199,7 +1201,7 @@ ridge_grid_tune %>%
 ## # ℹ 40 more rows
 ```
 
-We can visulize the tuning based on this code 
+We can visualize the tuning based on this code 
 
 
 ``` r
@@ -1237,12 +1239,46 @@ We can see from the models that the models are getting better with more penalty.
 ``` r
 lowest_rmse_ridge <- ridge_grid_tune %>%
                         select_best(metric = "rmse")
+lowest_rmse_ridge
+```
 
+```
+## # A tibble: 1 × 2
+##   penalty .config              
+##     <dbl> <chr>                
+## 1       1 Preprocessor1_Model25
+```
+
+``` r
 final_ridge_model_workflow <- finalize_workflow(
                     ridge_workflow %>% 
                     add_model(tune_penalty_ridge),
                     lowest_rmse_ridge
                   )
+
+final_ridge_model_workflow
+```
+
+```
+## ══ Workflow ════════════════════════════════════════════════════════════════════
+## Preprocessor: Recipe
+## Model: linear_reg()
+## 
+## ── Preprocessor ────────────────────────────────────────────────────────────────
+## 3 Recipe Steps
+## 
+## • step_normalize()
+## • step_dummy()
+## • step_zv()
+## 
+## ── Model ───────────────────────────────────────────────────────────────────────
+## Linear Regression Model Specification (regression)
+## 
+## Main Arguments:
+##   penalty = 1
+##   mixture = 0
+## 
+## Computational engine: glmnet
 ```
 
 ### Variable importance 
@@ -1259,18 +1295,18 @@ final_ridge_model %>%
 
 ```
 ## # A tibble: 194 × 3
-##    term                     estimate penalty
-##    <chr>                       <dbl>   <dbl>
-##  1 (Intercept)            25.3             1
-##  2 SDC_AGE_CALC            0.00217         1
-##  3 SDC_EDU_LEVEL_AGE       0.00482         1
-##  4 PA_TOTAL_SHORT         -0.0000525       1
-##  5 PSE_ADULT_WRK_DURATION  0.00746         1
-##  6 SDC_GENDER_X2          -0.135           1
-##  7 SDC_MARITAL_STATUS_X2  -0.000721        1
-##  8 SDC_MARITAL_STATUS_X3  -0.0118          1
-##  9 SDC_MARITAL_STATUS_X4  -0.285           1
-## 10 SDC_MARITAL_STATUS_X5   0.00461         1
+##    term                    estimate penalty
+##    <chr>                      <dbl>   <dbl>
+##  1 (Intercept)            25.5            1
+##  2 SDC_AGE_CALC            0.0235         1
+##  3 SDC_EDU_LEVEL_AGE       0.0444         1
+##  4 PA_TOTAL_SHORT         -0.141          1
+##  5 PSE_ADULT_WRK_DURATION  0.0708         1
+##  6 SDC_GENDER_X2          -0.135          1
+##  7 SDC_MARITAL_STATUS_X2  -0.000721       1
+##  8 SDC_MARITAL_STATUS_X3  -0.0118         1
+##  9 SDC_MARITAL_STATUS_X4  -0.285          1
+## 10 SDC_MARITAL_STATUS_X5   0.00461        1
 ## # ℹ 184 more rows
 ```
 
@@ -1280,15 +1316,15 @@ vip(final_ridge_model, num_features = 20)
 
 ![](linear_regression_files/figure-html/unnamed-chunk-28-1.png)<!-- -->
 
-### Final model 
+### Final model on testing data 
 
-let’s return to our test data. The tune package has a function last_fit() which is nice for situations when you have tuned and finalized a model or workflow and want to fit it one last time on your training data and evaluate it on your testing data. You only have to pass this function your finalized model/workflow and your split.
+let’s return to our test data. The tune package has a function last_fit() which is nice for situations when you have tuned and finalized a model or workflow and want to fit it one last time on your training data and evaluate it on your testing data. You only have to pass this function your finalized model/workflow and your split. As we pass it the split object from the start of our code we get two processes for the price of one. We train/fit our selected model on 100% of Train and then it automatically scores up the Test set with the newly created, final model. 
 
 
 ``` r
-last_fit(final_ridge_model_workflow,
-         data_split) %>%
-          collect_metrics()
+last_fit_ridge <- last_fit(final_ridge_model_workflow, data_split)  %>%
+                    collect_metrics()
+last_fit_ridge
 ```
 
 ```

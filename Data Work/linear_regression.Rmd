@@ -251,8 +251,6 @@ summary(pred_bmi$.pred)
 summary(test_data$bmi_recode)
 ```
 
-[https://quantifyinghealth.com/linear-regression-in-r-tidymodels/](https://quantifyinghealth.com/linear-regression-in-r-tidymodels/)
-
 Now we want to combine all of our results into one dataframe and just do a quick check. 
 
 ```{r}
@@ -338,6 +336,7 @@ Now we can add roles to this recipe. We can use the update_role() function to le
 bmi_recipe <- 
   recipe(bmi_recode ~ ., data = train_data) %>% 
   update_role(ADM_STUDY_ID, new_role = "ID") %>% 
+  step_normalize(all_numeric_predictors()) %>% ### Mean center and standardize (z-score) the numeric predictors
   step_dummy(all_nominal_predictors()) %>% ### One hot encoding. Dramatically improves model performance with many factors
   step_zv(all_predictors()) ### Remove columns from the data when the training set data have a single value. Zero variance predictor
 
@@ -381,6 +380,8 @@ bmi_predicted <- augment(bmi_fit, test_data)
 ### Ridge and lasso regression
 
 We have run basic model with all variables but maybe that's too slow and maybe it's overfitting the data and we want to use a different approach for model selection. We can use ridge and lasso regression (as discussed in the slides). We already have our workflow and recipe from tidymodels so all we need to change is your regression part of the tidymodels section and we run a ridge regression. We can't use `glm` for the this as it does not support these methods. We need to change the engine to `glmnet`. 
+
+The tuning parameter for the ridge regression is known has a __hyperparameter__. Different types of ML models will have different hyperparameters that you need to tune to make sure that they are optimized for your model. 
 
 Here sort of randomly set the penalty for the ridge model but that's just to give us an example. We will tune the penalty a bit later. The code for this is mostly based from [https://juliasilge.com/blog/lasso-the-office/](https://juliasilge.com/blog/lasso-the-office/) this tutorial, with some modifications for explanability and because some functions are depricated. 
 
@@ -429,7 +430,6 @@ ridge_grid_tune <- tune_grid(
                   resamples = data_boot,
                   grid = lambda_grid
                 )
-
 ```
 
 Let's pull the results and see what we get
@@ -439,7 +439,7 @@ ridge_grid_tune %>%
   collect_metrics()
 ```
 
-We can visulize the tuning based on this code 
+We can visualize the tuning based on this code 
 
 ```{r}
 ridge_grid_tune %>%
@@ -462,6 +462,7 @@ We can see from the models that the models are getting better with more penalty.
 ```{r}
 lowest_rmse_ridge <- ridge_grid_tune %>%
                         select_best(metric = "rmse")
+lowest_rmse_ridge
 
 final_ridge_model_workflow <- finalize_workflow(
                     ridge_workflow %>% 
@@ -469,7 +470,7 @@ final_ridge_model_workflow <- finalize_workflow(
                     lowest_rmse_ridge
                   )
 
-
+final_ridge_model_workflow
 ```
 
 ### Variable importance 
@@ -487,16 +488,12 @@ vip(final_ridge_model, num_features = 20)
 
 ### Final model on testing data 
 
-# WRITE ME
-
-
-### Final model 
-
-let’s return to our test data. The tune package has a function last_fit() which is nice for situations when you have tuned and finalized a model or workflow and want to fit it one last time on your training data and evaluate it on your testing data. You only have to pass this function your finalized model/workflow and your split.
+let’s return to our test data. The tune package has a function last_fit() which is nice for situations when you have tuned and finalized a model or workflow and want to fit it one last time on your training data and evaluate it on your testing data. You only have to pass this function your finalized model/workflow and your split. As we pass it the split object from the start of our code we get two processes for the price of one. We train/fit our selected model on 100% of Train and then it automatically scores up the Test set with the newly created, final model. 
 
 ```{r}
-last_fit(final_ridge_model_workflow, data_split)  %>%
+last_fit_ridge <- last_fit(final_ridge_model_workflow, data_split)  %>%
                     collect_metrics()
+last_fit_ridge
 ```
 
 ## Cross validation 
