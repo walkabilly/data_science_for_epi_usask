@@ -43,11 +43,18 @@ library(tidymodels)
 ## ✖ dplyr::lag()      masks stats::lag()
 ## ✖ yardstick::spec() masks readr::spec()
 ## ✖ recipes::step()   masks stats::step()
-## • Learn how to get started at https://www.tidymodels.org/start/
+## • Search for functions across packages at https://www.tidymodels.org/find/
 ```
 
 ``` r
 library(sjPlot)
+```
+
+```
+## Install package "strengejacke" from GitHub (`devtools::install_github("strengejacke/strengejacke")`) to load all sj-packages at once!
+```
+
+``` r
 library(psych)
 ```
 
@@ -118,6 +125,8 @@ library(performance)
 ```
 
 ``` r
+library(utils)
+
 data <- read_csv("mice_all_imp.csv")
 ```
 
@@ -1343,4 +1352,6 @@ Here we will use our new up-scaled data and apply 10 fold cross-validation appro
 
 ![](https://static.wixstatic.com/media/ea0077_8bf9cf19b5ce4f24816ac8d7a1da00fd~mv2.png/v1/fill/w_804,h_452,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/Resampling_PNG.png)
 
+
+session_info()
 
