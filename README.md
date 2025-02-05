@@ -103,11 +103,11 @@ Week |	Date |	Topic |	Data Work | Assignment Due |
 5	| February 5	| Linear Regression | [Linear Regression](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/linear_regression.md) | Missing Data |
 6	| February 12	| Logistic Regression | [Logistic Regression]()
 7	| February 19	| Reading Week	| 
-8	| February 26	| Scientific Computing	| [Scientific Computing/Big Data]() | Independent Analysis 1 |
-9	| March 5	| Causal Inference | [Causal Quartet]() | Scientific Computing |
-10	| March 12 | Support Vector Machines | [Random Forest]() |  |
-11	| March 19	| Random Forest	| [Matching]() | Random Forest |
-12	| March 26	| Matching Methods	| [SVM]() | Matching |
+8	| February 26	| Random Forest	| [Random Forest]() | Independent Analysis 1 |
+9	| March 5	| Causal Inference | [Causal Quartet]() | Random Forest |
+10	| March 12	| Matching Methods	| [Matching]() |  |
+11	| March 19 | Support Vector Machines | [SVM]() | Matching |
+12	| March 26	| Scientific Computing	| [Scientific Computing/Big Data]() |  |
 13	| April 2	| Artificial Neural Networks	| [ANN]() | Independent Analysis 2 |
 * Subject to change depending on speed
 

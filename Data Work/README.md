@@ -11,9 +11,10 @@ Week |	Data Work |
 5	| [Linear Regression](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/linear_regression.md) |
 6	| [Logistic Regression]() |
 7	| Reading Week	| 
-8	| [Scientific Computing/Big Data]() | 
+8	| [Random Forest]() | 
 9	| [Causal Quartet]() | 
-10 | [Random Forest]() |  
-11 | [Matching]() | 
-12 | [SVM]() | 
+10 | [Matching]() | 
+11 | [SVM]() | 
+12 | [Scientific Computing/Big Data]() | 
 13 | [ANN]() | 
+
