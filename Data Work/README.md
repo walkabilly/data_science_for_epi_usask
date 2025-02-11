@@ -9,7 +9,7 @@ Week |	Data Work |
 3	| [HappyGitwithR](https://happygitwithr.com/) | | 
 4	| [Missing Data](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/missing_data.md) | 
 5	| [Linear Regression](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/linear_regression.md) |
-6	| [Logistic Regression]() |
+6	| [Logistic Regression](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/logistic_regression.md) |
 7	| Reading Week	| 
 8	| [Random Forest]() | 
 9	| [Causal Quartet]() | 
