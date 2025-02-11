@@ -101,7 +101,7 @@ Week |	Date |	Topic |	Data Work | Assignment Due |
 3	| January 21	| Version Control with Git/Github	| [HappyGitwithR](https://happygitwithr.com/) | Data Wrangling | 
 4	| January 29	| Missing Data	| [Missing Data](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/missing_data.md) | Git/Github | 
 5	| February 5	| Linear Regression | [Linear Regression](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/linear_regression.md) | Missing Data |
-6	| February 12	| Logistic Regression | [Logistic Regression]()
+6	| February 12	| Logistic Regression | [Logistic Regression](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/logistic_regression.md)
 7	| February 19	| Reading Week	| 
 8	| February 26	| Random Forest	| [Random Forest]() | Independent Analysis 1 |
 9	| March 5	| Causal Inference | [Causal Quartet]() | Random Forest |
