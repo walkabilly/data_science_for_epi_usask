@@ -45,18 +45,11 @@ library(tidymodels)
 ## ✖ dplyr::lag()      masks stats::lag()
 ## ✖ yardstick::spec() masks readr::spec()
 ## ✖ recipes::step()   masks stats::step()
-## • Search for functions across packages at https://www.tidymodels.org/find/
+## • Dig deeper into tidy modeling with R at https://www.tmwr.org
 ```
 
 ``` r
 library(sjPlot)
-```
-
-```
-## #refugeeswelcome
-```
-
-``` r
 library(C50)
 library(finalfit)
 library(knitr)
@@ -244,54 +237,9 @@ data_small <- select(data, diabetes, gen_health, SDC_AGE_CALC, SDC_EDU_LEVEL, PM
 
 ### Decision tree
 
-https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/08-tree-based-methods.html
-
-https://1965eric.github.io/Machine_Learning/section-5-classification-with-more-than-two-classes-and-the-caret-package.html
+Good walk through of decision tree and how to visualize the tree [here](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/08-tree-based-methods.html)
 
 Same as usual with tidymodels we are going to prepare the model and the recipe in order to run the analysis. Here we are skipping the recipe part just to show the CART approach before moving into Random Forest.
-
-#### Data split
-
-```{}
-set.seed(100)
-data_split <- initial_split(data)
-
-train_data <- training(data_split)
-test_data <- testing(data_split)
-```
-
-
-#### Model 
-
-```{}
-tree_spec <- decision_tree() %>%
-  set_engine("rpart") %>% 
-  set_mode("classification")
-
-tree_spec
-```
-
-#### Fit model
-
-Here we are not doing any form of cross validation. Just fitting the model to all of the data to show what we get. This is a 4 class model predicting general health. 
-
-```{}
-class_tree_fit <- tree_spec %>%
-                    fit(diabetes ~ ., data = train_data)
-class_tree_fit
-```
-
-#### Visualize tree
-
-```{}
-class_tree_fit %>%
-  extract_fit_engine() %>%
-  rpart.plot()
-```
-
-
-
-
 
 ### Random Forest
 
@@ -442,26 +390,29 @@ set.seed(100)
 folds <- vfold_cv(train_data, v = 10) ## normally you would do at least 10 folds. Just doing 5 because it's faster.
 
 rf_grid <- grid_regular(
-              mtry(range = c(10, 30)),
-              min_n(range = c(2, 8))
+              mtry(range = c(5, 30)),
+              min_n(range = c(5, 50)),
+              levels = 5 ### run every 5 iterations and 
             )
 
 rf_grid
 ```
 
 ```
-## # A tibble: 9 × 2
-##    mtry min_n
-##   <int> <int>
-## 1    10     2
-## 2    20     2
-## 3    30     2
-## 4    10     5
-## 5    20     5
-## 6    30     5
-## 7    10     8
-## 8    20     8
-## 9    30     8
+## # A tibble: 25 × 2
+##     mtry min_n
+##    <int> <int>
+##  1     5     5
+##  2    11     5
+##  3    17     5
+##  4    23     5
+##  5    30     5
+##  6     5    16
+##  7    11    16
+##  8    17    16
+##  9    23    16
+## 10    30    16
+## # ℹ 15 more rows
 ```
 
 ``` r
@@ -470,1530 +421,8 @@ health_fit <- tune_grid(
                 resamples = folds,
                 grid = rf_grid, 
                 control = control_resamples(save_pred = TRUE, 
-                                                  verbose = TRUE))
-```
+                                                  verbose = FALSE))
 
-```
-## i Fold01: preprocessor 1/1
-```
-
-```
-## ✓ Fold01: preprocessor 1/1
-```
-
-```
-## i Fold01: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold01: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold01: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold01: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1
-```
-
-```
-## ✓ Fold02: preprocessor 1/1
-```
-
-```
-## i Fold02: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold02: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold02: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold02: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1
-```
-
-```
-## ✓ Fold03: preprocessor 1/1
-```
-
-```
-## i Fold03: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold03: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold03: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold03: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1
-```
-
-```
-## ✓ Fold04: preprocessor 1/1
-```
-
-```
-## i Fold04: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold04: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold04: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold04: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1
-```
-
-```
-## ✓ Fold05: preprocessor 1/1
-```
-
-```
-## i Fold05: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold05: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold05: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold05: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1
-```
-
-```
-## ✓ Fold06: preprocessor 1/1
-```
-
-```
-## i Fold06: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold06: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold06: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold06: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1
-```
-
-```
-## ✓ Fold07: preprocessor 1/1
-```
-
-```
-## i Fold07: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold07: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold07: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold07: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1
-```
-
-```
-## ✓ Fold08: preprocessor 1/1
-```
-
-```
-## i Fold08: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold08: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold08: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold08: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1
-```
-
-```
-## ✓ Fold09: preprocessor 1/1
-```
-
-```
-## i Fold09: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold09: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold09: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold09: preprocessor 1/1, model 9/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1
-```
-
-```
-## ✓ Fold10: preprocessor 1/1
-```
-
-```
-## i Fold10: preprocessor 1/1, model 1/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 1/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 1/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 1/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 2/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 2/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 2/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 2/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 3/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 3/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 3/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 3/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 4/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 4/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 4/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 4/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 5/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 5/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 5/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 5/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 6/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 6/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 6/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 6/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 7/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 7/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 7/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 7/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 8/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 8/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 8/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 8/9 (predictions)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 9/9
-```
-
-```
-## ✓ Fold10: preprocessor 1/1, model 9/9
-```
-
-```
-## i Fold10: preprocessor 1/1, model 9/9 (extracts)
-```
-
-```
-## i Fold10: preprocessor 1/1, model 9/9 (predictions)
-```
-
-``` r
 health_fit
 ```
 
@@ -2003,23 +432,27 @@ health_fit
 ## # A tibble: 10 × 5
 ##    splits               id     .metrics          .notes           .predictions
 ##    <list>               <chr>  <list>            <list>           <list>      
-##  1 <split [25947/2883]> Fold01 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  2 <split [25947/2883]> Fold02 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  3 <split [25947/2883]> Fold03 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  4 <split [25947/2883]> Fold04 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  5 <split [25947/2883]> Fold05 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  6 <split [25947/2883]> Fold06 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  7 <split [25947/2883]> Fold07 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  8 <split [25947/2883]> Fold08 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-##  9 <split [25947/2883]> Fold09 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>    
-## 10 <split [25947/2883]> Fold10 <tibble [27 × 6]> <tibble [0 × 3]> <tibble>
+##  1 <split [25947/2883]> Fold01 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  2 <split [25947/2883]> Fold02 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  3 <split [25947/2883]> Fold03 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  4 <split [25947/2883]> Fold04 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  5 <split [25947/2883]> Fold05 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  6 <split [25947/2883]> Fold06 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  7 <split [25947/2883]> Fold07 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  8 <split [25947/2883]> Fold08 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+##  9 <split [25947/2883]> Fold09 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>    
+## 10 <split [25947/2883]> Fold10 <tibble [75 × 6]> <tibble [0 × 3]> <tibble>
 ```
+
+#### Plot of the results. 
+
+Default here is to run 3 iterations for each of the values. We ran it with 5 instead which is why you see there are 5 points for each min_n and mtry.
 
 
 ``` r
 health_fit %>%
   collect_metrics() %>%
-  filter(.metric == "roc_auc") %>%
+  filter(.metric == "accuracy") %>%
   select(mean, min_n, mtry) %>%
   pivot_longer(min_n:mtry,
     values_to = "value",
@@ -2028,10 +461,34 @@ health_fit %>%
   ggplot(aes(value, mean, color = parameter)) +
   geom_point(show.legend = FALSE) +
   facet_wrap(~parameter, scales = "free_x") +
-  labs(x = NULL, y = "AUC")
+  labs(x = NULL, y = "Accuracy")
 ```
 
 ![](random_forest_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
+### Different way to plot
+
+
+``` r
+health_fit %>%
+  collect_metrics() %>%
+  filter(.metric == "accuracy") %>%
+  mutate(min_n = factor(min_n)) %>%
+  ggplot(aes(mtry, mean, color = min_n)) +
+  geom_line(alpha = 0.5, size = 1.5) +
+  geom_point() +
+  labs(y = "Accuracy")
+```
+
+```
+## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+## ℹ Please use `linewidth` instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+```
+
+![](random_forest_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
 
 ### Collect the results
 
@@ -2046,9 +503,9 @@ rf_best
 
 ```
 ## # A tibble: 1 × 3
-##    mtry min_n .config             
-##   <int> <int> <chr>               
-## 1    10     2 Preprocessor1_Model1
+##    mtry min_n .config              
+##   <int> <int> <chr>                
+## 1    23     5 Preprocessor1_Model04
 ```
 
 ``` r
@@ -2076,10 +533,10 @@ conf_mat(rf_auc_fit, truth = gen_health,
 ```
 ##           Truth
 ## Prediction    1    2    3    4
-##          1  682  209  116   39
-##          2 1285 3951 2230  657
-##          3  964 4729 9528 3739
-##          4   15   59  154  473
+##          1  732  248  135   44
+##          2 1312 4081 2352  705
+##          3  883 4536 9269 3597
+##          4   19   83  272  562
 ```
 
 #### Accuracy
@@ -2111,7 +568,7 @@ sens(rf_auc_fit, truth = gen_health,
 ## # A tibble: 1 × 3
 ##   .metric .estimator .estimate
 ##   <chr>   <chr>          <dbl>
-## 1 sens    macro          0.390
+## 1 sens    macro          0.397
 ```
 
 #### Specificity
@@ -2126,7 +583,7 @@ spec(rf_auc_fit, truth = gen_health,
 ## # A tibble: 1 × 3
 ##   .metric .estimator .estimate
 ##   <chr>   <chr>          <dbl>
-## 1 spec    macro          0.801
+## 1 spec    macro          0.803
 ```
 
 #### F1 Score
@@ -2141,20 +598,75 @@ f_meas(rf_auc_fit, truth = gen_health,
 ## # A tibble: 1 × 3
 ##   .metric .estimator .estimate
 ##   <chr>   <chr>          <dbl>
-## 1 f_meas  macro          0.397
+## 1 f_meas  macro          0.407
 ```
 
 ## Final model
 
 Above we are looking at our trained model over the cross-validation sets. We have not actually tested our model on our test data. To run the last model we need to back to our workflow and use the `last_fit` function. Note that we use the `cv_split` object rather than the train or test data objects. This will will fit the model to the entire training set and evaluate it with the testing set. We need to back to our workflow object (somewhat counter intuitive). 
 
-```{}
-final_rf_model <- last_fit(health_fit, cv_split)
 
-collect_metrics(final_rf_model)
+``` r
+final_model <- finalize_model(
+                  rf_model,
+                  rf_best
+                )
+
+final_model
 ```
 
-Overall accuracy on the test data shows this is a pretty good model. Perhaps a bit suspect as I'm always skeptical if I see a model with 0.999 accuracy but this is a very small dataset and sort of a toy example so we are just going to leave it at this. 
+```
+## Random Forest Model Specification (classification)
+## 
+## Main Arguments:
+##   mtry = 23
+##   trees = 100
+##   min_n = 5
+## 
+## Engine-Specific Arguments:
+##   num.threads = cores
+## 
+## Computational engine: ranger
+```
+
+### Variable Importance
+
+
+``` r
+tree_prep <- prep(activity_recipe)
+
+final_model %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(gen_health ~ .,
+    data = juice(tree_prep)) %>%
+  vip(geom = "point")
+```
+
+![](random_forest_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+
+### Final Model Fit
+
+
+``` r
+final_rf_workflow <- workflow() %>%
+                      add_recipe(activity_recipe) %>%
+                      add_model(final_model)
+
+final_results <- final_rf_workflow %>%
+                    last_fit(cv_split)
+
+final_results %>%
+  collect_metrics()
+```
+
+```
+## # A tibble: 3 × 4
+##   .metric     .estimator .estimate .config             
+##   <chr>       <chr>          <dbl> <chr>               
+## 1 accuracy    multiclass     0.501 Preprocessor1_Model1
+## 2 roc_auc     hand_till      0.742 Preprocessor1_Model1
+## 3 brier_class multiclass     0.306 Preprocessor1_Model1
+```
 
 ## Session Info
 

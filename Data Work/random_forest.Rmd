@@ -104,54 +104,9 @@ data_small <- select(data, diabetes, gen_health, SDC_AGE_CALC, SDC_EDU_LEVEL, PM
 
 ### Decision tree
 
-https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/08-tree-based-methods.html
-
-https://1965eric.github.io/Machine_Learning/section-5-classification-with-more-than-two-classes-and-the-caret-package.html
+Good walk through of decision tree and how to visualize the tree [here](https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/08-tree-based-methods.html)
 
 Same as usual with tidymodels we are going to prepare the model and the recipe in order to run the analysis. Here we are skipping the recipe part just to show the CART approach before moving into Random Forest.
-
-#### Data split
-
-```{}
-set.seed(100)
-data_split <- initial_split(data)
-
-train_data <- training(data_split)
-test_data <- testing(data_split)
-```
-
-
-#### Model 
-
-```{}
-tree_spec <- decision_tree() %>%
-  set_engine("rpart") %>% 
-  set_mode("classification")
-
-tree_spec
-```
-
-#### Fit model
-
-Here we are not doing any form of cross validation. Just fitting the model to all of the data to show what we get. This is a 4 class model predicting general health. 
-
-```{}
-class_tree_fit <- tree_spec %>%
-                    fit(diabetes ~ ., data = train_data)
-class_tree_fit
-```
-
-#### Visualize tree
-
-```{}
-class_tree_fit %>%
-  extract_fit_engine() %>%
-  rpart.plot()
-```
-
-
-
-
 
 ### Random Forest
 
@@ -254,8 +209,9 @@ set.seed(100)
 folds <- vfold_cv(train_data, v = 10) ## normally you would do at least 10 folds. Just doing 5 because it's faster.
 
 rf_grid <- grid_regular(
-              mtry(range = c(10, 30)),
-              min_n(range = c(2, 8))
+              mtry(range = c(5, 30)),
+              min_n(range = c(5, 50)),
+              levels = 5 ### run every 5 iterations and 
             )
 
 rf_grid
@@ -266,15 +222,19 @@ health_fit <- tune_grid(
                 resamples = folds,
                 grid = rf_grid, 
                 control = control_resamples(save_pred = TRUE, 
-                                                  verbose = TRUE))
+                                                  verbose = FALSE))
 
 health_fit
 ```
 
+#### Plot of the results. 
+
+Default here is to run 3 iterations for each of the values. We ran it with 5 instead which is why you see there are 5 points for each min_n and mtry.
+
 ```{r}
 health_fit %>%
   collect_metrics() %>%
-  filter(.metric == "roc_auc") %>%
+  filter(.metric == "accuracy") %>%
   select(mean, min_n, mtry) %>%
   pivot_longer(min_n:mtry,
     values_to = "value",
@@ -283,7 +243,20 @@ health_fit %>%
   ggplot(aes(value, mean, color = parameter)) +
   geom_point(show.legend = FALSE) +
   facet_wrap(~parameter, scales = "free_x") +
-  labs(x = NULL, y = "AUC")
+  labs(x = NULL, y = "Accuracy")
+```
+
+### Different way to plot
+
+```{r}
+health_fit %>%
+  collect_metrics() %>%
+  filter(.metric == "accuracy") %>%
+  mutate(min_n = factor(min_n)) %>%
+  ggplot(aes(mtry, mean, color = min_n)) +
+  geom_line(alpha = 0.5, size = 1.5) +
+  geom_point() +
+  labs(y = "Accuracy")
 ```
 
 ### Collect the results
@@ -349,13 +322,40 @@ f_meas(rf_auc_fit, truth = gen_health,
 
 Above we are looking at our trained model over the cross-validation sets. We have not actually tested our model on our test data. To run the last model we need to back to our workflow and use the `last_fit` function. Note that we use the `cv_split` object rather than the train or test data objects. This will will fit the model to the entire training set and evaluate it with the testing set. We need to back to our workflow object (somewhat counter intuitive). 
 
-```{}
-final_rf_model <- last_fit(health_fit, cv_split)
+```{r}
+final_model <- finalize_model(
+                  rf_model,
+                  rf_best
+                )
 
-collect_metrics(final_rf_model)
+final_model
 ```
 
-Overall accuracy on the test data shows this is a pretty good model. Perhaps a bit suspect as I'm always skeptical if I see a model with 0.999 accuracy but this is a very small dataset and sort of a toy example so we are just going to leave it at this. 
+### Variable Importance
+
+```{r}
+tree_prep <- prep(activity_recipe)
+
+final_model %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(gen_health ~ .,
+    data = juice(tree_prep)) %>%
+  vip(geom = "point")
+```
+
+### Final Model Fit
+
+```{r}
+final_rf_workflow <- workflow() %>%
+                      add_recipe(activity_recipe) %>%
+                      add_model(final_model)
+
+final_results <- final_rf_workflow %>%
+                    last_fit(cv_split)
+
+final_results %>%
+  collect_metrics()
+```
 
 ## Session Info
 
