@@ -45,11 +45,18 @@ library(tidymodels)
 ## ✖ dplyr::lag()      masks stats::lag()
 ## ✖ yardstick::spec() masks readr::spec()
 ## ✖ recipes::step()   masks stats::step()
-## • Dig deeper into tidy modeling with R at https://www.tmwr.org
+## • Use tidymodels_prefer() to resolve common conflicts.
 ```
 
 ``` r
 library(sjPlot)
+```
+
+```
+## Learn more about sjPlot with 'browseVignettes("sjPlot")'.
+```
+
+``` r
 library(C50)
 library(finalfit)
 library(knitr)
@@ -338,7 +345,7 @@ Now we can add roles to this recipe. We can use the `update_role()` function to 
 
 
 ``` r
-activity_recipe <- 
+health_recipe <- 
   recipe(gen_health ~ ., data = train_data) %>% 
   step_zv(all_predictors()) ### Remove columns from the data when the training set data have a single value. Zero variance predictor
 ```
@@ -352,7 +359,7 @@ A workflow connects our recipe with out model. The workflow let's us setup the m
 health_workflow <- 
         workflow() %>% 
         add_model(rf_model) %>% 
-        add_recipe(activity_recipe)
+        add_recipe(health_recipe)
 
 health_workflow
 ```
@@ -387,12 +394,12 @@ health_workflow
 ``` r
 set.seed(100)
 
-folds <- vfold_cv(train_data, v = 10) ## normally you would do at least 10 folds. Just doing 5 because it's faster.
+folds <- vfold_cv(train_data, v = 10) 
 
 rf_grid <- grid_regular(
               mtry(range = c(5, 30)),
               min_n(range = c(5, 50)),
-              levels = 5 ### run every 5 iterations and 
+              levels = 5  
             )
 
 rf_grid
@@ -633,7 +640,7 @@ final_model
 
 
 ``` r
-tree_prep <- prep(activity_recipe)
+tree_prep <- prep(health_recipe)
 
 final_model %>%
   set_engine("ranger", importance = "permutation") %>%
@@ -649,7 +656,7 @@ final_model %>%
 
 ``` r
 final_rf_workflow <- workflow() %>%
-                      add_recipe(activity_recipe) %>%
+                      add_recipe(health_recipe) %>%
                       add_model(final_model)
 
 final_results <- final_rf_workflow %>%
