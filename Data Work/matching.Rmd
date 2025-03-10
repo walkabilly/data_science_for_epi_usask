@@ -1,0 +1,333 @@
+---
+title: "Matching Methods"
+author: "Daniel Fuller"
+date: "2024-09-23"
+output:
+      html_document:
+        keep_md: true
+---
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(adjustedCurves)
+library(boot)
+library(broom)
+library(geepack)
+library(here)
+library(MatchIt)
+library(tableone)
+library(sjPlot)
+library(survey)
+library(episensr) 
+library(epitools)
+library(gtsummary)
+library(cobalt)
+library(cowplot)
+library(geepack)
+library(WeightIt)
+```
+
+# Matching Methods
+
+Research question of interest. __Is unemployment (treatment) associated with type 2 diabetes in our sample?__
+
+Why might this be relevant for our sample? It's hard to randomize employment because it's not feasible to make people not work/not earn money. Also, unemployed people might have quite different characteristics than other people or the general population. Also, remember that we have a sample here that is from the same source population so it's appropriate to think about matching as a potential analysis method. 
+
+```{r}
+data <- read_csv("mice_all_imp.csv")
+
+data <- data %>% mutate_at(3, factor)
+data <- data %>% mutate_at(5:6, factor)
+data <- data %>% mutate_at(8:12, factor)
+data <- data %>% mutate_at(15:81, factor)
+data <- data %>% mutate_at(83:93, factor)
+```
+
+### Some data cleaning
+
+#### Diabetes
+
+Diabetes = 0 (No diabetes ever), Diabetes = 1 (Yes diabetes ever)
+
+```{r}
+table(data$DIS_DIAB_EVER)
+
+data <- data %>%
+	mutate(diabetes = case_when(
+		DIS_DIAB_EVER == 0 ~ 0,
+		DIS_DIAB_EVER == 1 ~ 1,
+		DIS_DIAB_EVER == 2 ~ 0)) %>%
+		mutate(diabetes = as.factor(diabetes))
+
+table(data$DIS_DIAB_EVER, data$diabetes)
+
+data$DIS_DIAB_EVER <- NULL
+```
+
+#### Unemployed
+
+unemployed = 0 (Not unemployed), unemployed = 1 (Unemployed)
+
+```{r}
+table(data$WRK_UNEMPLOYED)
+
+data <- data %>%
+	mutate(unemployed = case_when(
+		WRK_UNEMPLOYED == 0 ~ 0,
+		WRK_UNEMPLOYED == 1 ~ 1)) %>%
+		mutate(unemployed = as.factor(unemployed))
+
+table(data$WRK_UNEMPLOYED, data$unemployed)
+
+data$WRK_UNEMPLOYED <- NULL
+```
+
+## Unadjusted / Non-matched models
+
+### Examine association between treatment and outcome
+
+```{r}
+table(data$unemployed, data$diabetes)
+
+#### Epi tools method
+unemp <- c("No", "Yes")
+outc <- c("Case", "Control")
+dat <- matrix(c(2924, 36176, 190, 1897),2,2,byrow=TRUE)
+dimnames(dat) <- list("Unemployed" = unemp, "Outcome" = outc)
+oddsratio(dat, rev="c")
+
+#### Logistic regression
+lr <- glm(diabetes ~ unemployed, data = data, family = "binomial")
+
+tab_model(lr)
+```
+
+The naive analysis here suggests that unemployed people are 1.24x more likely to have diabetes compared to employed people. 
+
+## Define closeness
+
+### Variables to include
+
+Se we need to define variables are associated with the treatment (unemployment/employment) in order to create a model that can help us define what causes treatment. General rule we want to include more variables than less in our propensity score. Except, do not be included variables that may have been affected by the treatment of interest in matching.
+
+We would define a DAG here that could be helpful in general to understand the problem. For this purpose though we are just going to select a set of variables we think cause unemployment. 
+
+* WRK_UNABLE: Unable to work
+* WRK_STUDENT: Student
+* PSE_ADULT_WRK_DURATION: Total duration of passive smoking exposure during adulthood at work.
+* WH_CONTRACEPTIVES_EVER: Indicator of whether the female participant has ever used hormonal contraceptives.
+* SDC_INCOME: Income
+* SDC_EDU_LEVEL_AGE: Age at which the participant completed the highest level of education.
+* SDC_GENDER: Gender
+* SDC_AGE_CALC: Age
+
+### Summary statistics of baseline variables by treatment status
+
+```{r}
+covariates <- select(data, WRK_UNABLE, WRK_STUDENT, PSE_ADULT_WRK_DURATION, WH_CONTRACEPTIVES_EVER, SDC_INCOME, SDC_EDU_LEVEL_AGE, SDC_GENDER, SDC_AGE_CALC)
+baselines <- colnames(covariates)
+baselines
+
+tab_baseline <- CreateTableOne(vars = baselines,
+                       data = data, 
+                       strata = "unemployed", 
+                       test = FALSE, #mute P-value calculation;
+                       smd = TRUE,
+                       addOverall = TRUE)
+
+kableone(tab_baseline, smd = TRUE, showAllLevels = FALSE )
+```
+
+## Naive regression
+
+If we were not doing matching we would adjust the treatment variable & covariates as in a typical regression analysis. 
+
+```{r}
+fit_naive <- glm(diabetes ~ unemployed + WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE + SDC_GENDER + SDC_AGE_CALC, family = "binomial", data = data)
+
+tab_model(fit_naive)
+```
+
+## Matching Nearest Neighbour
+
+Here were are using the `MatchIt` package which has a number of implementations of different matching methods. Here we are using this package because it helps us keep track of the matches and let's us use more suffisticated methods. We could just estimate the proposensity score using a standard logistic regression and extract the results. That works too but it's a bit more cumbersome once we want to do anything advanced. 
+
+```{r}
+# 1:1 NN PS matching w/o replacement
+kkn_1_1 <- matchit(unemployed ~ WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE + SDC_GENDER + SDC_AGE_CALC,
+                  data = data,
+                  method = "nearest",
+                  distance = "glm")
+
+summary(kkn_1_1, un = FALSE)
+
+knn_data <- match.data(kkn_1_1)
+```
+
+We can see which participants are matched to which with the `match.matrix`
+
+```{r}
+head(kkn_1_1$match.matrix)
+```
+
+Here we have a 1:1 match with 2087 treated (unemployed people) matched to the same number of employed people based on the variables we think are associated with the treatment. We can see that the SMD is much better for the matched data compared to the treatment/control comparison we did previously.
+
+### Visualizaing matches
+
+There are a few different ways to visualize the matches. We can show the propensity score by matched and unmatched groups as below.
+
+```{r}
+love_knn <- love.plot(kkn_1_1, 
+          binary = "std", 
+          grid = TRUE,
+          thresholds = c(m = .1),
+          colors = c("red","blue"))  
+
+plot(love_knn)
+```
+
+We can show the histogram of the propensity score for each of the treatment groups. 
+
+```{r}
+bal.plot(kkn_1_1,
+         var.name="distance",
+         which="both",
+         type = "density",
+         colors = c("red","blue"))
+```
+
+Remember that the propensity score is a summary metric of the probability so it's a number ranging from 0-1 for all of the variabels we include in the model. If we want to see how well the matching does on individual covariates we can show that as well. 
+
+```{r}
+plot(kkn_1_1, type = "density", interactive = FALSE,
+     which.xs = ~WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE)
+```
+
+## Generalized Full matching
+
+```{r}
+full <- matchit(unemployed ~ WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE + SDC_GENDER + SDC_AGE_CALC,
+                  data = data,
+                  method = "quick",
+                  distance = "glm")
+full
+
+summary(full, un = FALSE)
+```
+
+### Visualizaing matches
+
+There are a few different ways to visualize the matches. We can show the propensity score by matched and unmatched groups as below.
+
+```{r}
+love_full <- love.plot(full, 
+                binary = "std", 
+                grid = TRUE,
+                thresholds = c(m = .1),
+                colors = c("red","blue"))
+
+plot(love_full)
+```
+
+Comparison with KNN
+
+```{r}
+plot_grid(love_full, love_knn, ncol = 1, nrow = 2, labels = c('Full', 'KNN'))
+```
+
+We can show the histogram of the propensity score for each of the treatment groups. 
+
+```{r}
+bal.plot(full,
+         var.name="distance",
+         which="both",
+         type = "density",
+         colors = c("red","blue"))
+```
+
+Remember that the propensity score is a summary metric of the probability so it's a number ranging from 0-1 for all of the variabels we include in the model. If we want to see how well the matching does on individual covariates we can show that as well. 
+
+```{r}
+plot(full, type = "density", interactive = FALSE,
+     which.xs = ~WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE)
+```
+
+## Analysis of the outcome and estimation of the treatment effect
+
+### Regression no covariates
+
+```{r}
+full_data <- match.data(full)
+table(full_data$diabetes)
+
+full_data$diabetes <- as.numeric(full_data$diabetes)
+full_data <- full_data %>%
+	mutate(diabetes = case_when(
+		diabetes == 1 ~ 0,
+		diabetes == 2 ~ 1)) 
+```
+
+```{r}
+fit_no_cov <- geeglm(diabetes ~ unemployed, family=binomial("log"), 
+              data=full_data,
+              weights=weights, 
+              std.err = 'san.se', 
+              id=subclass, 
+              corstr="independence") 
+
+tab_model(fit_no_cov)
+```
+
+### Inverse probability of treatment weighting (IPTW)
+
+```{r}
+IPTW <- weightit(unemployed ~ WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE + SDC_GENDER + SDC_AGE_CALC,
+                 data = data,
+                 method = "glm", #using the default logistic regression;
+                 stabilize = TRUE,
+                 estimand = "ATE")
+
+IPTW
+
+summary(IPTW)
+```
+
+```{r}
+bal.plot(IPTW,
+         which="both",
+         type = "density",
+         colors = c("red","blue"))
+```
+
+```{r}
+bal.tab(IPTW, un=TRUE, thresholds = c(m=0.1))
+```
+
+```{r}
+model_iptw <- glm_weightit(diabetes ~ unemployed, 
+            family = "binomial",
+            weightit = IPTW,
+            data = data)
+
+tab_model(model_iptw)
+```
+
+## All models together
+
+```{r}
+tab_model(fit_naive, fit_no_cov, model_iptw)
+```
+
+## Ressources
+
+1. Tutorial on Causal Inference Using Machine Learning Methods. Kuan Liu.[https://kuan-liu.github.io/ai4ph2023/](https://kuan-liu.github.io/ai4ph2023/)
+2. MatchIt: Getting Started. Noah Greifer. [https://kosukeimai.github.io/MatchIt/articles/MatchIt.html](https://kosukeimai.github.io/MatchIt/articles/MatchIt.html)
+3. Propensity Score Analyses in Complex Surveys. Ehsan Karim. [https://ehsanx.github.io/PS-survey/](https://ehsanx.github.io/PS-survey/)
+
+## Session Info
+
+```{r}
+sessionInfo()
+```
+
