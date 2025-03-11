@@ -123,11 +123,10 @@ Assignment | Grade %
 [Data Wrangling and Visualization](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/data_wrangling_visualization.md) | 10%
 [Github](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/git_github.md) |	10%
 [Missing Data](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/missing_data.md) |	15%
-[Independent Analysis](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/analysis_part1.md) - Part 1 |	10%
+[Independent Analysis](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/analysis_part1.md) - Part 1 |	15%
 [Random Forest](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/random_forest.md) | 15%
-[Scientific Computing/Big Data](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/scientific_computing.md) | 10%
 [Matching](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/matching.md)	| 15%
-[Independent Analysis](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/analysis_part2.md) – Part 2	| 15%
+[Independent Analysis](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Assignments/analysis_part2.md) – Part 2	| 20%
 Total	| 100%
 
 ## Assignment Descriptions
@@ -145,23 +144,19 @@ Value: 		15% of final grade
 Description: In this assignment you will apply and compare different methods for imputing missing data on large health administrative dataset. 
 
 ### Independent Analysis 1
-Value: 		10% of final grade  
+Value: 		15% of final grade  
 Description: This is part 1 of the independent analysis. You will need to find a dataset, develop an analysis plan to includes the major components of the course (ie., Github, Scientific Computing), and conduct descriptive statistics and data wrangling on your chosen dataset. 
 
 ### Random Forest 
 Value: 		10% of final grade  
 Description: In this analysis you will complete an Random Forest analysis using the Can Path student dataset. You will need to run the analysis, conduct detailed hyperparameter tuning, and conduct model comparisons.
 
-### Scientific Computing/Big Data 
-Value: 		10% of final grade  
-Description: In this assignment you will use the [USask Plato High Performance Computing](https://wiki.usask.ca/display/ARC/Plato+HPC+Cluster) to run a large scale machine learning on a large (~1GB) dataset. 
-
-### Matching 15%
+### Matching 
 Value: 		15% of final grade  
 Description: In this analysis you will complete an machine learning based matching analysis using the Can Path student dataset.
 
-### Independent Analysis 15%
-Value: 		15% of final grade  
+### Independent Analysis 
+Value: 		20% of final grade  
 Description: This is part 2 (final part) of the independent analysis. You will need to conduct a complete analysis including data wrangling, missing data handling, and apply at least 2 different machine learning methods to your data. 
 
 ### Self-Evaluation
