@@ -524,7 +524,23 @@ summary(kkn_1_1, un = FALSE)
 knn_data <- match.data(kkn_1_1)
 ```
 
-We can see which participants are matched to which with the `match.matrix`
+#### Histogram of the propensity score
+
+
+``` r
+ggplot(data = knn_data, aes(distance)) + 
+        geom_histogram()
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](matching_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+
+How do we interpret this? 
+
+#### We can see which participants are matched to which with the `match.matrix`
 
 
 ``` r
@@ -558,7 +574,7 @@ love_knn <- love.plot(kkn_1_1,
 plot(love_knn)
 ```
 
-![](matching_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
 
 We can show the histogram of the propensity score for each of the treatment groups. 
 
@@ -571,7 +587,7 @@ bal.plot(kkn_1_1,
          colors = c("red","blue"))
 ```
 
-![](matching_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
 
 Remember that the propensity score is a summary metric of the probability so it's a number ranging from 0-1 for all of the variabels we include in the model. If we want to see how well the matching does on individual covariates we can show that as well. 
 
@@ -581,7 +597,7 @@ plot(kkn_1_1, type = "density", interactive = FALSE,
      which.xs = ~WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE)
 ```
 
-![](matching_files/figure-html/unnamed-chunk-11-1.png)<!-- -->![](matching_files/figure-html/unnamed-chunk-11-2.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-12-1.png)<!-- -->![](matching_files/figure-html/unnamed-chunk-12-2.png)<!-- -->
 
 ## Generalized Full matching
 
@@ -671,6 +687,10 @@ summary(full, un = FALSE)
 ## Discarded         0.        0
 ```
 
+``` r
+full_data <- match.data(full)
+```
+
 ### Visualizaing matches
 
 There are a few different ways to visualize the matches. We can show the propensity score by matched and unmatched groups as below.
@@ -686,7 +706,7 @@ love_full <- love.plot(full,
 plot(love_full)
 ```
 
-![](matching_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 Comparison with KNN
 
@@ -695,7 +715,7 @@ Comparison with KNN
 plot_grid(love_full, love_knn, ncol = 1, nrow = 2, labels = c('Full', 'KNN'))
 ```
 
-![](matching_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 We can show the histogram of the propensity score for each of the treatment groups. 
 
@@ -708,7 +728,7 @@ bal.plot(full,
          colors = c("red","blue"))
 ```
 
-![](matching_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 Remember that the propensity score is a summary metric of the probability so it's a number ranging from 0-1 for all of the variabels we include in the model. If we want to see how well the matching does on individual covariates we can show that as well. 
 
@@ -718,7 +738,82 @@ plot(full, type = "density", interactive = FALSE,
      which.xs = ~WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE)
 ```
 
-![](matching_files/figure-html/unnamed-chunk-16-1.png)<!-- -->![](matching_files/figure-html/unnamed-chunk-16-2.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-17-1.png)<!-- -->![](matching_files/figure-html/unnamed-chunk-17-2.png)<!-- -->
+
+### Histogram of propensity score, weights, and subclasses
+
+
+``` r
+### Propensity scores
+summary(full_data$distance)
+```
+
+```
+##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+## 0.0000002 0.0358902 0.0430217 0.0506713 0.0557772 0.4182065
+```
+
+``` r
+ggplot(data = full_data, aes(distance)) + 
+        geom_histogram()
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](matching_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
+``` r
+### Weights
+
+summary(full_data$weights)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.1499  0.4570  0.6939  1.0000  1.0408 56.2051
+```
+
+``` r
+ggplot(data = full_data, aes(weights)) + 
+        geom_histogram()
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](matching_files/figure-html/unnamed-chunk-18-2.png)<!-- -->
+
+``` r
+### Subclasses
+
+summary(full_data$subclass)
+```
+
+```
+##    1880    1302    1230    2061    1394     103    1736     225    1823      54 
+##     126     117     102     101      98      97      97      91      91      90 
+##    1301    1575    1194    1868    1500    1412    1395     159    1563    1709 
+##      89      89      86      85      84      77      76      75      74      74 
+##    1715    1501    1614     792    1443    1453     891    1264     603    1350 
+##      74      73      73      70      70      69      68      68      66      66 
+##    1547    1817    2057    1300    1921    1322    1625    1770    1939    1373 
+##      66      66      66      65      65      64      64      64      64      63 
+##    1403    1737     714    1292    1356    1492    1759     359    1926    1957 
+##      63      63      62      62      62      62      62      61      61      61 
+##    1351    1543    1669     105    1255    1424    1675    2010    2035    1207 
+##      60      60      60      59      59      59      59      59      59      58 
+##    1769    1782    1894     281    1196    1330    1393    1421    1516     214 
+##      58      58      58      57      57      57      57      57      57      56 
+##    1381    1564      96    1208    1210    1539    1787    1962     925    1323 
+##      56      56      55      55      55      55      55      55      54      54 
+##    1496    1632    1680    1704    1969      60    1658    1718    1920      84 
+##      54      54      54      54      54      53      53      53      53      52 
+##     174    1102    1276    1413    1847     250     447     536     781 (Other) 
+##      52      52      52      52      52      51      51      51      51   34693
+```
 
 ## Analysis of the outcome and estimation of the treatment effect
 
@@ -726,7 +821,6 @@ plot(full, type = "density", interactive = FALSE,
 
 
 ``` r
-full_data <- match.data(full)
 table(full_data$diabetes)
 ```
 
@@ -744,14 +838,18 @@ full_data <- full_data %>%
 		diabetes == 2 ~ 1)) 
 ```
 
+### GEE regresion 
+
+Why do we need to do a GEE regression in this context? What's happening with the matches and what are we doing? 
+
 
 ``` r
 fit_no_cov <- geeglm(diabetes ~ unemployed, family=binomial("log"), 
               data=full_data,
-              weights=weights, 
-              std.err = 'san.se', 
-              id=subclass, 
-              corstr="independence") 
+              weights=weights, ### Weights
+              std.err = 'san.se', ### Equivalent to robust standard errors 
+              id=subclass, #### Group by subclasses
+              corstr="independence") #### Specify correlation structure
 ```
 
 ```
@@ -869,7 +967,7 @@ bal.plot(IPTW,
 ## No `var.name` was provided. Displaying balance for prop.score.
 ```
 
-![](matching_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+![](matching_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 
 ``` r

@@ -165,7 +165,16 @@ summary(kkn_1_1, un = FALSE)
 knn_data <- match.data(kkn_1_1)
 ```
 
-We can see which participants are matched to which with the `match.matrix`
+#### Histogram of the propensity score
+
+```{r}
+ggplot(data = knn_data, aes(distance)) + 
+        geom_histogram()
+```
+
+How do we interpret this? 
+
+#### We can see which participants are matched to which with the `match.matrix`
 
 ```{r}
 head(kkn_1_1$match.matrix)
@@ -214,6 +223,8 @@ full <- matchit(unemployed ~ WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION +
 full
 
 summary(full, un = FALSE)
+
+full_data <- match.data(full)
 ```
 
 ### Visualizaing matches
@@ -253,12 +264,32 @@ plot(full, type = "density", interactive = FALSE,
      which.xs = ~WRK_UNABLE + WRK_STUDENT + PSE_ADULT_WRK_DURATION + WH_CONTRACEPTIVES_EVER + SDC_INCOME + SDC_EDU_LEVEL_AGE)
 ```
 
+### Histogram of propensity score, weights, and subclasses
+
+```{r}
+### Propensity scores
+summary(full_data$distance)
+
+ggplot(data = full_data, aes(distance)) + 
+        geom_histogram()
+
+### Weights
+
+summary(full_data$weights)
+
+ggplot(data = full_data, aes(weights)) + 
+        geom_histogram()
+
+### Subclasses
+
+summary(full_data$subclass)
+```
+
 ## Analysis of the outcome and estimation of the treatment effect
 
 ### Regression no covariates
 
 ```{r}
-full_data <- match.data(full)
 table(full_data$diabetes)
 
 full_data$diabetes <- as.numeric(full_data$diabetes)
@@ -268,13 +299,17 @@ full_data <- full_data %>%
 		diabetes == 2 ~ 1)) 
 ```
 
+### GEE regresion 
+
+Why do we need to do a GEE regression in this context? What's happening with the matches and what are we doing? 
+
 ```{r}
 fit_no_cov <- geeglm(diabetes ~ unemployed, family=binomial("log"), 
               data=full_data,
-              weights=weights, 
-              std.err = 'san.se', 
-              id=subclass, 
-              corstr="independence") 
+              weights=weights, ### Weights
+              std.err = 'san.se', ### Equivalent to robust standard errors 
+              id=subclass, #### Group by subclasses
+              corstr="independence") #### Specify correlation structure
 
 tab_model(fit_no_cov)
 ```
