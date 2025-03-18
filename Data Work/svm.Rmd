@@ -26,6 +26,7 @@ library(parsnip)
 library(glmnet)
 library(themis)
 library(microbenchmark)
+library(palmerpenguins)
 ```
 
 # Support Vector Machines
@@ -112,12 +113,11 @@ step_smotenc(diabetes, over_ratio = 0.9) %>%
 
 Here we use the tidy models to setup a model using `kernlab` and `classification` and we call the specific model we want to fit. 
 
-* __mtry__: An integer for the number of predictors that will be randomly sampled at each split when creating the tree models.
-* __trees__: An integer for the number of trees contained in the ensemble.
-* __min_n__: An integer for the minimum number of data points in a node that are required for the node to be split further.
-
-https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/09-support-vector-machines.html
-
+* __cost__ (default: 1.0): A positive number for the cost of predicting a sample within or on the wrong side of the margin. 
+Low cost, points that are misclassified are penalized less than with a higher cost. 
+How much do we are about misclassification? 
+* __margin__ (default: 0.1): Insensitivity margin, how wide a margin do we want to make to select the support vectors. (Does not apply in classification)
+* __rbf_sigma__  rbf_sigma (no default – estimated based on data) : A positive number for the radial basis function. Tune me!
 
 ```{r}
 svm_model <- svm_poly(degree = 1) %>% 
@@ -153,15 +153,138 @@ svm_workflow <-
                 verbose = TRUE)) ## Edit for running live
 ```
 
-##### NOT RUN
-
 ```{}
 collect_metrics(svm_initial)
 ```
 
+### Pivot to toy data
 
+Data example is a combination of the R4 Data Science tutorial and the Emil Hvitfeldt one. 
+
+```{r}
+penguins_df <- penguins %>%
+  filter(!is.na(sex)) %>% # discarding NA obs
+  select(-year, -island) # not useful
+
+cv_split <- initial_validation_split(penguins_df, 
+                            strata = sex, 
+                            prop = c(0.70, 0.20))
+
+# Create data frames for the two sets:
+train_data <- training(cv_split)
+table(train_data$sex)
+
+test_data  <- testing(cv_split)
+table(test_data$sex)
+
+folds <- vfold_cv(training(cv_split), v = 5, strata = sex)
+
+roc_res <- metric_set(roc_auc) # accuracy, a classification metric
+```
+
+```{r}
+svm_recipe <- 
+  recipe(sex ~ ., data = train_data) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors(), -all_outcomes()) %>%
+  step_normalize(all_numeric_predictors())
+```
+
+```{r}
+svm_model <-
+  svm_rbf(cost = tune(), rbf_sigma = tune()) %>%
+  set_mode("classification") %>%
+  set_engine("kernlab")
+```
+
+```{r}
+svm_grid <- grid_regular(
+              rbf_sigma(range = c(0, 5)),
+              cost(range = c(5, 20)),
+              levels = 2  
+            )
+```
+
+
+```{r}
+svm_workflow <- 
+  workflow() %>% 
+  add_model(svm_model) %>% 
+  add_recipe(svm_recipe) %>% 
+    tune_grid(resamples = folds,
+              metrics = roc_res,
+                control = control_grid(save_pred = TRUE, 
+                verbose = FALSE)) ## Edit for running live
+
+collect_metrics(svm_workflow)
+```
+
+```{r}
+svm_workflow %>%
+  collect_metrics() %>%
+  filter(.metric == "roc_auc") %>%
+  select(mean, cost, rbf_sigma) %>%
+  pivot_longer(cost:rbf_sigma,
+    values_to = "value",
+    names_to = "parameter"
+  ) %>%
+  ggplot(aes(value, mean, color = parameter)) +
+  geom_point(show.legend = FALSE) +
+  facet_wrap(~parameter, scales = "free_x") +
+  labs(x = NULL, y = "Accuracy")
+```
+
+```{r}
+svm_best <- 
+  svm_workflow %>% 
+  select_best(metric = "roc_auc")
+
+svm_best
+
+svm_auc_fit <- 
+  svm_workflow %>% 
+  collect_predictions(parameters = svm_best) 
+```
+
+
+```{r}
+final_model <- finalize_model(
+                  svm_model,
+                  svm_best
+                )
+
+final_model
+```
+
+### Variable Importance
+
+```{}
+
+```
+
+### Final Model Fit
+
+```{r}
+final_svm_workflow <- workflow() %>%
+                      add_recipe(svm_recipe) %>%
+                      add_model(final_model)
+
+final_results <- final_svm_workflow %>%
+                    last_fit(cv_split)
+
+final_results %>%
+  collect_metrics()
+```
 
 # Resources
 
 1. https://r4ds.github.io/bookclub-tmwr/svm-model-as-motivating-example.html
 2. https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/09-support-vector-machines.html
+
+## Session Info
+
+```{r}
+sessionInfo()
+```
+
+
