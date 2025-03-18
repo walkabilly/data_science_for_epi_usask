@@ -120,8 +120,7 @@ https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/09-support-vector-machines.
 
 
 ```{r}
-svm_model <-
-  svm_rbf(cost = tune(), rbf_sigma = tune(), margin = tune()) %>% 
+svm_model <- svm_poly(degree = 1) %>% 
   set_mode("classification") %>%
   set_engine("kernlab")
 svm_model
@@ -129,12 +128,15 @@ svm_model
 
 ### Workflow
 
-```{r}
+```{}
 svm_grid <- grid_regular(
               rbf_sigma(range = c(-2, 2)),
               levels = 2  
             )
+```
 
+
+```{r}
 roc_res <- metric_set(roc_auc) 
 ```
 
@@ -146,24 +148,20 @@ svm_workflow <-
   add_model(svm_model) %>% 
   add_recipe(svm_recipe) %>% 
     tune_grid(resamples = folds,
-              grid = svm_grid,
               metrics = roc_res,
-                control = control_grid(save_pred = TRUE, 
+                control = control_grid(save_pred = FALSE, 
                 verbose = TRUE)) ## Edit for running live
 ```
+
+##### NOT RUN
 
 ```{}
 collect_metrics(svm_initial)
 ```
 
 
-# Random Forest
 
+# Resources
 
-# Logistic regression
-
-
-
-
-#### Simplifying the data
-
+1. https://r4ds.github.io/bookclub-tmwr/svm-model-as-motivating-example.html
+2. https://emilhvitfeldt.github.io/ISLR-tidymodels-labs/09-support-vector-machines.html
