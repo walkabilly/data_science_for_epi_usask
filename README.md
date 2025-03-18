@@ -106,7 +106,7 @@ Week |	Date |	Topic |	Data Work | Assignment Due |
 8	| February 26	| Random Forest	| [Random Forest](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/random_forest.md) | Independent Analysis 1 |
 9	| March 5	| Causal Inference | [Causal Quartet](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/causal_quartet_R.md) | Random Forest |
 10	| March 12	| Matching Methods	| [Matching](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/matching.md) |  |
-11	| March 19 | Support Vector Machines | [SVM]() | Matching |
+11	| March 19 | Support Vector Machines | [SVM](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/svm.md) | Matching |
 12	| March 26	| Scientific Computing	| [Scientific Computing/Big Data]() |  |
 13	| April 2	| Artificial Neural Networks	| [ANN]() | Independent Analysis 2 |
 * Subject to change depending on speed
