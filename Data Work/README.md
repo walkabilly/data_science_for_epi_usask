@@ -14,7 +14,7 @@ Week |	Data Work |
 8	| [Random Forest](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/random_forest.md) | 
 9	| [Causal Quartet](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/causal_quartet_R.md) | 
 10 | [Matching](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/matching.md) | 
-11 | [SVM]() | 
+11 | [SVM](https://github.com/walkabilly/data_science_for_epi_usask/blob/main/Data%20Work/svm.md) | 
 12 | [Scientific Computing/Big Data]() | 
 13 | [ANN]() | 
 
