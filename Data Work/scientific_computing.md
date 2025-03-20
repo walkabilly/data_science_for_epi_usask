@@ -1,0 +1,98 @@
+---
+title: "Scientific Computing"
+author: "Daniel Fuller"
+date: "2024-09-23"
+output:
+      html_document:
+        keep_md: true
+---
+
+# Scientific Computing
+
+## Why?
+
+Frequently, research problems that use computing can outgrow the desktop or laptop computer where they started:
+
+* A statistics student wants to cross-validate their model. This involves running the model 1000 times – but each run takes an hour. Running on their laptop will take over a month!
+* A genomics researcher has been using small datasets of sequence data, but soon will be receiving a new type of sequencing data that is 10 times as large. It’s already challenging to open the datasets on their computer – analyzing these larger datasets will be extremely difficult if not impossible!
+* An engineer is using a fluid dynamics package that has an option to run in parallel. So far, they haven’t used this option on their desktop, but in going from 2D to 3D simulations, simulation time has more than tripled and it might be useful to take advantage of that feature.
+
+In all these cases, what is needed is access to more processing power. Luckily, large scale computing systems – shared computing resources with lots of computers – are available at many universities, labs, or through national networks. These resources usually have more central processing units(CPUs), CPUs that operate at higher speeds, more memory, more storage, and faster connections with other computer systems. They are frequently called “clusters”, “supercomputers” or resources for “high performance computing” or HPC. In this lesson, we will usually use the terminology of HPC and HPC cluster.
+
+Using a cluster often has the following advantages for researchers:
+
+* __Speed__. With many more CPU cores, often with higher performance specs, than a typical laptop or desktop, HPC systems can offer significant speed up.
+* __Volume__. Many HPC systems have both the processing memory (RAM) and disk storage to handle very large amounts of data. Terabytes of RAM and petabytes of storage are available for research projects.
+* __Efficiency__. Many HPC systems operate a pool of resources that are drawn on by many users. In most cases when the pool is large and diverse enough the resources on the system are used almost constantly.
+* __Cost__. Bulk purchasing and government funding mean that the cost to the research community for using these systems in significantly less that it would be otherwise.
+* __Convenience__. Maybe your calculations just take a long time to run or are otherwise inconvenient to run on your personal computer. There’s no need to tie up your own computer for hours when you can use someone else’s instead.
+
+## Command Line
+
+Using HPC systems often involves the use of a shell through a command line interface (CLI) and either specialized software or programming techniques. The shell is a program with the special role of having the job of running other programs rather than doing calculations or similar tasks itself. What the user types goes into the shell, which then figures out what commands to run and orders the computer to execute them. (Note that the shell is called “the shell” because it encloses the operating system in order to hide some of its complexity and make it simpler to interact with.) The most popular Unix shell is Bash, the Bourne Again SHell (so-called because it’s derived from a shell written by Stephen Bourne). Bash is the default shell on most modern implementations of Unix and in most packages that provide Unix-like tools for Windows.
+
+Connecting to an HPC system is most often done through a tool known as “SSH” (Secure SHell) and usually SSH is run through a terminal. So, to begin using an HPC system we need to begin by opening a terminal. Different operating systems have different terminals, none of which are exactly the same in terms of their features and abilities while working on the operating system. When connected to the remote system the experience between terminals will be identical as each terminal is running on the same remote system.
+
+## Graphical User Interface
+
+There are lots of graphical user interface (GUI) options available for working with HPC or other servers (including things like Amazon Web Service, Google Cloud Storage, and Microsoft Azure). Personally, I use [FileZila](https://filezilla-project.org/) as it's a free and open source tool (with a pro upgrade available). These tools allow you to visulize what is happening in the file system but are often limited in terms of running the full range of commands you will need to work with the HPC. Generally, I tend to work with a mix of command line and GUI depending on the task. Other good options for GUIs are
+
+* [Cyberduck](https://cyberduck.io/) 
+* [CoreFTP](https://www.coreftp.com/)
+* [WinSCP](https://winscp.net/eng/index.php)
+
+## Connecting
+
+SSH allows us to connect to UNIX computers remotely, and use them as if they were our own. The general syntax of the connection command follows the format `ssh yourUsername@some.computer.address` Let’s attempt to connect to the HPC system now
+
+```{}
+ssh nsid@plato.usask.ca
+```
+
+If you’ve connected successfully, you should see a prompt like the one below. This prompt is informative, and lets you grasp certain information at a glance. (If you don’t understand what these things are, don’t worry! We will cover things in depth as we explore the system further.)
+
+```{}
+[nsid@platolgn01 ~]$ 
+```
+
+You may have noticed that the prompt changed when you logged into the remote system using the terminal (if you logged in using PuTTY this will not apply because it does not offer a local terminal). This change is important because it makes it clear on which system the commands you type will be run when you pass them into the terminal. This change is also a small complication that we will need to navigate throughout the workshop. Exactly what is reported before the $ in the terminal when it is connected to the local system and the remote system will typically be different for every user. We still need to indicate which system we are entering commands on though so we will adopt the following convention:
+
+* [local]$ when the command is to be entered on a terminal connected to your local computer
+* [nsid@platolgn01 ~]$ when the command is to be entered on a terminal connected to the remote system
+* $ when it really doesn’t matter which system the terminal is connected to.
+
+### Working in multiple places
+
+It is strongly recommended that you have two terminals open, one connected to the local system and one connected to the remote system, that you can switch back and forth between. If you only use one terminal window then you will need to reconnect to the remote system using one of the methods above when you see a change from `[local]$` to `[nsid@platolgn01 ~]$` and disconnect when you see the reverse.
+
+# Basic commands
+
+* `ls`: prints the names of the files and directories in the current directory in alphabetical order, arranged neatly into columns.
+
+
+# Resources
+
+From [https://cbe453.github.io/arc-plato-shell/00-hpc-intro/index.html](https://cbe453.github.io/arc-plato-shell/00-hpc-intro/index.html) and 
+
+Licensed under CC-BY 4.0 2018–2025 by The Carpentries
+Licensed under CC-BY 4.0 2016–2018 by Software Carpentry Foundation
+
+Plato: https://wiki.usask.ca/display/ARC/Getting+started+on+Plato#GettingstartedonPlato-Linuxbasics
+
+https://cbe453.github.io/arc-plato-shell/
+
+https://wiki.usask.ca/display/ARC/Plato+SLURM+job+scripts
+
+Software: https://docs.alliancecan.ca/wiki/Available_software
+
+SSH: https://docs.alliancecan.ca/wiki/SSH
+
+Linux intro: https://docs.alliancecan.ca/wiki/Linux_introduction
+
+Standard Software environments: https://docs.alliancecan.ca/wiki/Standard_software_environments
+
+Running Jobs: https://docs.alliancecan.ca/wiki/Running_jobs
+
+ML: https://docs.alliancecan.ca/wiki/AI_and_Machine_Learning
+
+R script: https://docs.alliancecan.ca/wiki/R
