@@ -1,13 +1,10 @@
 ---
 title: "Scientific Computing"
 author: "Daniel Fuller"
-date: "2024-09-23"
 output:
       html_document:
         keep_md: true
 ---
-
-# Scientific Computing
 
 ## Why?
 
@@ -85,7 +82,9 @@ A quick note on the structure of a UNIX (Linux/Mac/Android/Solaris/etc) filesyst
 
 # Looking at and modifying files
 
-There are resources for opening and modifying text files [here](https://cbe453.github.io/arc-plato-shell/03-files/index.html). In reality it's unlikely you will be doing this much. More likely that you will be opening files from a text editor or something on your local computer. The one thing that you might need to to do is go grab and unzip a large file on the HPC using the command line. This can be done directly in your `r` code (more on this later) or using existing commands
+There are resources for opening and modifying text files [here](https://cbe453.github.io/arc-plato-shell/03-files/index.html). In reality it's unlikely you will be doing this much. More likely that you will be opening files from a text editor or something on your local computer. The one thing that you might need to to do is go grab and unzip a large file on the HPC using the command line. This can be done directly in your `r` code (more on this later) or using existing commands. 
+
+If I need to move stuff around or delete files I tend to do that in Filezilla rather than the command line. Just easier.
 
 #### wget
 
@@ -109,34 +108,204 @@ $ curl -O https://cbe453.github.io/arc-plato-shell/files/bash-lesson.tar.gz
 * __unzip__: extracts the contents of `.zip` files
 * __tar -xvf__: extracts the contents of `.tar.gz` and `.tar.bz2` files
 
+# Permissions
+
+It's often the case that file permissions will need to be changed. This depends on the cluster and setup. In Digital Alliance Canada the person who creates the file is the owner and the file is not necessarily shareable with other people. GUI interfaces tend to not have full support for changing file permissions so it's important to be able to do this online. 
+
+```{}
+$ ls -l
+```
+
+That’s a huge amount of output: a full listing of everything in the directory. Let’s see if we can understand what each field of a given row represents, working left to right.
+
+* __Permissions__: On the very left side, there is a string of the characters `d`, `r`, `w`, `x`, and `-`. The d indicates if something is a directory (there is a `-` in that spot if it is not a directory). The other `r`, `w`, `x` bits indicate permission to Read, Write, and eXecute a file. There are three fields of `rwx` permissions following the spot for `d`. If a user is missing a permission to do something, it’s indicated by a   -.
+    * The first set of `rwx` are the permissions that the owner has (in this case the owner is yourUsername).
+    * The second set of rwxs are permissions that other members of the owner’s group share (in this case, the group is named yourUsername).
+    * The third set of rwxs are permissions that anyone else with access to this computer can do with a file. Though files are typically created with read permissions for everyone, typically the permissions on your home directory prevent others from being able to access the file in the first place.
+* __References__: This counts the number of references (hard links) to the item (file, folder, symbolic link or “shortcut”).
+* __Owner__: This is the username of the user who owns the file. Their permissions are indicated in the first permissions field.
+* __Group__: This is the user group of the user who owns the file. Members of this user group have permissions indicated in the second permissions field.
+* __Size of item__: This is the number of bytes in a file, or the number of filesystem blocks occupied by the contents of a folder. (We can use the -h option here to get a human-readable file size in megabytes, gigabytes, etc.)
+* __Time last modified__: This is the last time the file was modified.
+* __Filename__: This is the filename.
 
 
+| Letters |	Definition |
+| ------- | ---------- |
+| ‘r’ |	“read” the file’s contents. |
+| ‘w’ |	“write”, or modify, the file’s contents. |
+|‘x’  |	“execute” the file. This permission is given only if the file is a program.|
 
 
+So how do we change permissions? As I mentioned earlier, we need permission to execute our script. Changing permissions is done with `chmod`. 
+
+| Operators |	Definition |
+| --------- | ---------- |
+| `+` |	Add permissions |
+| `-` |	Remove permissions |
+| `=` |	Set the permissions to the specified values |
+
+
+If you want to give “execute” permission to the world (“group”) for file “demo.txt”, you will start by typing. 
+
+
+```{}
+chmod g
+```
+
+Now you would type a ‘+’ to say that you are “adding” permission. 
+
+```{}
+chmod g+
+```
+
+Then you would type an ‘x’ to say that you are adding “execute” permission. 
+
+```{}
+chmod g+x
+```
+
+Finally, specify which file you are changing.  
+
+```{}
+chmod g+x demo.txt
+```
+
+Change permissions so all users can execute a file: 
+
+```{}
+$ chmod +x demo.txt
+$ ls -l
+```
+
+# Environment and R 
+
+You need to setup your environment in the HPC before you do analysis. The environment is basically what the HPC will install for you to work with. You need to pick the right version of R and other software to make this work properly. Same as on your local computer. 
+
+List available versions of R on the cluster.
+
+```{}
+module spider r
+```
+
+Then, look at the version you want specifically to see if there are any other modules you need to load in order to run it. For example, if I want to use R 4.4.0, I would run:
+    
+```{}
+module spider r/4.4.0
+```
+    
+This will show any other modules & versions you need to load before you can run R.
+
+```{}
+module load StdEnv/2023 r/4.4.0
+```
+
+This loads package required to run R version 4.4.0, then loads R. It is important that they be in the correct order (StdEnv/2023 before r).
+
+```{}
+R
+```
+
+This opens an interactive R session.
+
+```{}
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+From here we can run our interactive session like we would normally do... just with a much much faster machine. It's best to develop your code locally on a smaller dataset then run here as doing simple code development on the cluster is not really that helpful. 
+
+
+```{}
+data <- read_csv("/accel_data_no_id.csv")
+mean(data$y_axis)
+```
+
+Close the interactive R session.
+
+```{}
+q()
+```
+
+If you try installing packages and receive error messages about specific modules needing to be loaded, check which versions you need with module spider and add them to the job script. For example, to use the package `raster`, you need to load modules for `gdal` and `proj.`
+
+# SLURM 
+
+Slurm is an open source, fault-tolerant, and highly scalable cluster management and job scheduling system for large and small Linux clusters. Slurm requires no kernel modifications for its operation and is relatively self-contained. As a cluster workload manager, Slurm has three key functions. First, it allocates exclusive and/or non-exclusive access to resources (compute nodes) to users for some duration of time so they can perform work. Second, it provides a framework for starting, executing, and monitoring work (normally a parallel job) on the set of allocated nodes. Finally, it arbitrates contention for resources by managing a queue of pending work. Official documentation for [SLURM here](https://slurm.schedmd.com/documentation.html). 
+
+__TLDR__ SLURM lets you schedule jobs on the HPC. You do this with a job script file that contains information about the job you want to submit and a path to the code you want to run. 
+
+### Serial Job
+
+```{}
+#!/bin/bash
+
+#SBATCH --time=01:00:00             # How much time your program needs
+#SBATCH --job-name="Test SLURM"     # A name for the job. Helps with error handling
+#SBATCH --mem=10GB                  # Amount of memory to use
+#SBATCH --output=Test.out           # A name for the output file
+
+cd /project/chep_fuller             # Edit to where the code and data live
+
+module load StdEnv/2023 r/4.4.0 
+
+srun Rscript testRun.R
+```
+
+This example illustrates the typical structure of a job script:
+
+1. Choose scheduler options: `#SBATCH` instructions
+2. Set the software environment: `module load` commands
+3. Perform the computation: commands prefixed with `srun`
+
+## Other types of jobs 
+
+Resources here to help with what your job script file needs depending the type of job [https://wiki.usask.ca/display/ARC/Plato+SLURM+job+scripts](https://wiki.usask.ca/display/ARC/Plato+SLURM+job+scripts).
+
+### How do I know how much time I need?
+
+Different HPCs have different time limits, ranging from 24 hours to 28 days. If you can, try running your script on a subset of data and seeing what it might scale up to (while being aware that not all processes scale linearly!)
+
+### How do I know how much memory I need?
+
+* Start large (at least 4GB) on a test script. Then
+    * While the script is running, check how much memory is used in real time by typing `sstat yourjobID.batch --format="JobID,MaxRSS"`
+    * When the script is done running, check how much was used by typing `sacct -o MaxRSS -j yourjobID`
+    * If you check the `slurm.out` file and you’re getting `“oom-kill”` errors, you need to request more memory
+    * If you’re using less than you asked for, it’s beneficial to reduce the memory in `--mem` or `--mem-per-cpu` (this way your job will get scheduled sooner)
+    * Resubmit your job with your new estimate.
+
+### How do I know how many CPUs I need?
+
+* If you didn’t explicitly do anything in your code to make your script run in parallel, it is set up to run on 1 core.
+* If you have, then you can request many cores. “How many?” It depends, how many do you need to run your script?
+
+## Submit the job
+
+We have all the information we need in our shell script. Now we just need to submit it to the scheduler. In Terminal, while in your user folder in the login node, write the following command:
+
+
+```{}
+sbatch regularTestRun.slurm ### File extension are arbitrary (every is text)
+```
+
+Now it’s out of your hands! The scheduler will see how many resources you are asking for, and try to slot in your job whenever there are some compute nodes available. You can check up on your job by typing `squeue -u yourusename` in Terminal.
+
+You can check any outputs from the R console in the slurm-yourjobID.out file. Anything that you put in a `print()` command in your R script should appear in the `Test.out` file, which can help with debugging!
 
 # Resources
 
-From [https://cbe453.github.io/arc-plato-shell/00-hpc-intro/index.html](https://cbe453.github.io/arc-plato-shell/00-hpc-intro/index.html) and 
+1. How to run your r scripts on Digital Alliance Canada. Julie Fortin. __Note. a bit old now so don't use the same versions of things__. [https://medium.com/the-nature-of-food/how-to-run-your-r-script-with-compute-canada-c325c0ab2973](https://medium.com/the-nature-of-food/how-to-run-your-r-script-with-compute-canada-c325c0ab2973)
 
-Licensed under CC-BY 4.0 2018–2025 by The Carpentries
-Licensed under CC-BY 4.0 2016–2018 by Software Carpentry Foundation
+### Plato
+1. Introduction to Using the Shell in a High-Performance Computing Context. Connor Burbridge. [https://cbe453.github.io/arc-plato-shell/00-hpc-intro/index.html](https://cbe453.github.io/arc-plato-shell/00-hpc-intro/index.html) and 
+2. Plato SLURM job scripts. Olivier Fisset. [https://wiki.usask.ca/display/ARC/Plato+SLURM+job+scripts](https://wiki.usask.ca/display/ARC/Plato+SLURM+job+scripts)
 
-Plato: https://wiki.usask.ca/display/ARC/Getting+started+on+Plato#GettingstartedonPlato-Linuxbasics
-
-https://cbe453.github.io/arc-plato-shell/
-
-https://wiki.usask.ca/display/ARC/Plato+SLURM+job+scripts
-
-Software: https://docs.alliancecan.ca/wiki/Available_software
-
-SSH: https://docs.alliancecan.ca/wiki/SSH
-
-Linux intro: https://docs.alliancecan.ca/wiki/Linux_introduction
-
-Standard Software environments: https://docs.alliancecan.ca/wiki/Standard_software_environments
-
-Running Jobs: https://docs.alliancecan.ca/wiki/Running_jobs
-
-ML: https://docs.alliancecan.ca/wiki/AI_and_Machine_Learning
-
-R script: https://docs.alliancecan.ca/wiki/R
+### Digital Alliance Canada
+1. Software [https://docs.alliancecan.ca/wiki/Available_software](https://docs.alliancecan.ca/wiki/Available_software)
+2. Linux intro [https://docs.alliancecan.ca/wiki/Linux_introduction](https://docs.alliancecan.ca/wiki/Linux_introduction)
+3. SSH [https://docs.alliancecan.ca/wiki/SSH](https://docs.alliancecan.ca/wiki/SSH)
+4. Standard Software environments: [https://docs.alliancecan.ca/wiki/Standard_software_environments](https://docs.alliancecan.ca/wiki/Standard_software_environments)
+5. Running Jobs: [https://docs.alliancecan.ca/wiki/Running_jobs](https://docs.alliancecan.ca/wiki/Running_jobs)
+6. Machine Learning: [https://docs.alliancecan.ca/wiki/AI_and_Machine_Learning](https://docs.alliancecan.ca/wiki/AI_and_Machine_Learning)
+7. R script: [https://docs.alliancecan.ca/wiki/R](https://docs.alliancecan.ca/wiki/R)
