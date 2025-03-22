@@ -49,7 +49,7 @@ data <- read_csv("mice_all_imp.csv")
 data <- data %>% mutate_at(3, factor)
 data <- data %>% mutate_at(5:6, factor)
 data <- data %>% mutate_at(8:9, factor)
-data <- data %>% mutate_at(12:13, factor)
+data <- data %>% mutate_at(12:12, factor)
 data <- data %>% mutate_at(15:81, factor)
 data <- data %>% mutate_at(83:93, factor)
 
@@ -68,6 +68,16 @@ data$DIS_DIAB_EVER <- NULL
 ```
 
 ```{r}
+data_continuous <- select(data, diabetes, 
+                            PSE_ADULT_WRK_DURATION, 
+                            PM_BMI_SR, 
+                            PA_TOTAL_SHORT, 
+                            SDC_HOUSEHOLD_CHILDREN_NB, 
+                            SDC_HOUSEHOLD_ADULTS_NB, 
+                            SDC_EDU_LEVEL_AGE, 
+                            SDC_AGE_CALC, 
+                            SDC_GENDER)
+
 data <- select(data, diabetes, SDC_AGE_CALC, SDC_EDU_LEVEL, PM_BMI_SR, HS_GEN_HEALTH, WRK_FULL_TIME, SMK_CIG_EVER, SDC_INCOME, PA_TOTAL_SHORT, HS_ROUTINE_VISIT_EVER, PSE_ADULT_WRK_DURATION, DIS_RESP_SLEEP_APNEA_EVER, SDC_EDU_LEVEL_AGE, SDC_GENDER)
 ```
 
@@ -79,7 +89,7 @@ data <- select(data, diabetes, SDC_AGE_CALC, SDC_EDU_LEVEL, PM_BMI_SR, HS_GEN_HE
 set.seed(10)
 
 #### Cross Validation Split
-cv_split <- initial_validation_split(data, 
+cv_split <- initial_validation_split(data_continuous, 
                             strata = diabetes, 
                             prop = c(0.70, 0.20))
 
@@ -94,7 +104,7 @@ table(test_data$diabetes)
 ### V folds
 
 ```{r}
-folds <- vfold_cv(training(cv_split), v = 5, strata = diabetes)
+folds <- vfold_cv(training(cv_split), v = 3, strata = diabetes)
 ```
 
 ## Recipe
@@ -120,7 +130,7 @@ How much do we are about misclassification?
 * __rbf_sigma__  rbf_sigma (no default – estimated based on data) : A positive number for the radial basis function. Tune me!
 
 ```{r}
-svm_model <- svm_poly(degree = 1) %>% 
+svm_model <- svm_rbf(cost = tune()) %>% 
   set_mode("classification") %>%
   set_engine("kernlab")
 svm_model
@@ -128,10 +138,11 @@ svm_model
 
 ### Workflow
 
-```{}
+```{r}
 svm_grid <- grid_regular(
-              rbf_sigma(range = c(-2, 2)),
-              levels = 2  
+              #rbf_sigma(range = c(-2, 2)),
+              cost(range = c(0, 20)),
+              levels = 5  
             )
 ```
 
@@ -142,19 +153,20 @@ roc_res <- metric_set(roc_auc)
 
 ##### NOT RUN
 
-```{}
+```{r}
 svm_workflow <- 
   workflow() %>% 
   add_model(svm_model) %>% 
   add_recipe(svm_recipe) %>% 
     tune_grid(resamples = folds,
+              grid = svm_grid,
               metrics = roc_res,
-                control = control_grid(save_pred = FALSE, 
+                control = control_grid(save_pred = TRUE, 
                 verbose = TRUE)) ## Edit for running live
 ```
 
-```{}
-collect_metrics(svm_initial)
+```{r}
+collect_metrics(svm_workflow)
 ```
 
 ### Pivot to toy data
@@ -199,9 +211,9 @@ svm_model <-
 
 ```{r}
 svm_grid <- grid_regular(
-              rbf_sigma(range = c(0, 5)),
-              cost(range = c(5, 20)),
-              levels = 2  
+              rbf_sigma(range = c(-3, 3)),
+              cost(range = c(1, 10)),
+              levels = 5  
             )
 ```
 
@@ -212,11 +224,12 @@ svm_workflow <-
   add_model(svm_model) %>% 
   add_recipe(svm_recipe) %>% 
     tune_grid(resamples = folds,
+              grid = svm_grid,
               metrics = roc_res,
                 control = control_grid(save_pred = TRUE, 
-                verbose = FALSE)) ## Edit for running live
+                verbose = TRUE)) ## Edit for running live
 
-collect_metrics(svm_workflow)
+metrics_svm <- collect_metrics(svm_workflow)
 ```
 
 ```{r}
