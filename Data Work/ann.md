@@ -32,8 +32,6 @@ library(brulee)
 library(neuralnet)
 ```
 
-# Artificial Neural Networks
-
 ## Research question and data
 
 We are using an imputed (ie. no missing data) version of the CanPath student dataset [https://canpath.ca/student-dataset/](https://canpath.ca/student-dataset/). The nice thing about this dataset is that it's pretty big in terms of sample size, has lots of variables, and we can use it for free. 
@@ -225,6 +223,8 @@ plot(basic_ann, rep = "best")
 
 ## Tidymodels implementation
 
+### Single layer neural network
+
 
 ``` r
 set.seed(10)
@@ -335,10 +335,132 @@ kable(mlp_results)
 
 No variable importance? Any idea why? 
 
+### Two layer neural network
+
+
+``` r
+set.seed(10)
+
+mlp_model_2l <- mlp(epochs = tune(), hidden_units = tune(), penalty = tune(), 
+                    learn_rate = tune(), activation = "relu") %>% 
+                 set_engine("brulee_two_layer",
+                   hidden_units_2 = tune(),
+                   activation_2 = "relu") %>% 
+                 set_mode("classification")
+```
+
+### Workflow
+
+
+``` r
+mlp_workflow_2l <- 
+  workflow() %>% 
+  add_model(mlp_model_2l) %>% 
+  add_recipe(diabetes_recipe) %>% 
+    tune_grid(resamples = folds,
+                control = control_grid(save_pred = FALSE, 
+                verbose = FALSE)) ## Edit for running live
+```
+
+```
+## → A | warning: Loss is NaN at epoch 34. Training is stopped.
+```
+
+```
+## There were issues with some computations   A: x1There were issues with some computations   A: x1
+```
+
+### Workflow results
+
+
+``` r
+metrics_tune_2l <- collect_metrics(mlp_workflow_2l)
+
+show_best(mlp_workflow_2l, metric='accuracy', n=5)  # only show the results for the best 5 models
+```
+
+```
+## # A tibble: 5 × 11
+##   hidden_units      penalty epochs learn_rate hidden_units_2 .metric  .estimator
+##          <int>        <dbl>  <int>      <dbl>          <int> <chr>    <chr>     
+## 1           39 0.0000359       335     0.631               7 accuracy binary    
+## 2            2 0.00599         445     0.0736             28 accuracy binary    
+## 3            7 0.000000215     115     0.0176              2 accuracy binary    
+## 4           12 0.00000278      170     0.001              44 accuracy binary    
+## 5           18 0.0000000001    225     0.308              39 accuracy binary    
+## # ℹ 4 more variables: mean <dbl>, n <int>, std_err <dbl>, .config <chr>
+```
+
+``` r
+plot(autoplot(mlp_workflow_2l, metric = 'accuracy'))
+```
+
+![](ann_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+### Final model - Test data
+
+
+``` r
+mlp_best_2l <- 
+  mlp_workflow_2l %>% 
+  select_best(metric = "accuracy")
+
+mlp_final_model_2l <- finalize_model(
+                          mlp_model_2l,
+                          mlp_best_2l
+                          )
+mlp_final_model_2l
+```
+
+```
+## Single Layer Neural Network Model Specification (classification)
+## 
+## Main Arguments:
+##   hidden_units = 39
+##   penalty = 3.59381366380463e-05
+##   epochs = 335
+##   activation = relu
+##   learn_rate = 0.630957344480193
+## 
+## Engine-Specific Arguments:
+##   hidden_units_2 = 7
+##   activation_2 = relu
+## 
+## Computational engine: brulee_two_layer
+```
+
+``` r
+final_mlp_workflow_2l <- workflow() %>%
+                      add_recipe(diabetes_recipe) %>%
+                      add_model(mlp_final_model_2l)
+
+final_mlp_results_2l <- final_mlp_workflow_2l %>%
+                        last_fit(cv_split)
+
+mlp_results_2l <- final_mlp_results_2l %>% collect_metrics()
+```
+
+## Final Results
+
+
+``` r
+kable(mlp_results_2l)
+```
+
+
+
+|.metric     |.estimator | .estimate|.config              |
+|:-----------|:----------|---------:|:--------------------|
+|accuracy    |binary     | 0.9254673|Preprocessor1_Model1 |
+|roc_auc     |binary     | 0.6656733|Preprocessor1_Model1 |
+|brier_class |binary     | 0.0675638|Preprocessor1_Model1 |
+
+
 # Resources
 
 1. https://www.tidymodels.org/learn/models/parsnip-nnet/
 2. https://www.datacamp.com/tutorial/neural-network-models-r
+3. 
 
 
 ## Session Info
