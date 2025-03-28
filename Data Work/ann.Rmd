@@ -1,0 +1,253 @@
+---
+title: "Artificial Neural Networks"
+author: "Daniel Fuller"
+output:
+      html_document:
+        keep_md: true
+---
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidymodels)
+library(sjPlot)
+library(finalfit)
+library(knitr)
+library(gtsummary)
+library(mlbench)
+library(kernlab)
+library(vip)
+library(rsample)
+library(tune)
+library(recipes)
+library(yardstick)
+library(parsnip)
+library(glmnet)
+library(themis)
+library(microbenchmark)
+library(AppliedPredictiveModeling)
+library(torch)
+library(brulee)
+library(neuralnet)
+```
+
+# Artificial Neural Networks
+
+## Research question and data
+
+We are using an imputed (ie. no missing data) version of the CanPath student dataset [https://canpath.ca/student-dataset/](https://canpath.ca/student-dataset/). The nice thing about this dataset is that it's pretty big in terms of sample size, has lots of variables, and we can use it for free. 
+
+Our research question is:  
+
+- **Can we develop a model that will predict type 2 diabetes**
+
+### Reading in data
+
+Here are reading in data and getting organized to run our models. 
+
+```{r}
+data <- read_csv("mice_all_imp.csv")
+
+data <- data %>% mutate_at(3, factor)
+data <- data %>% mutate_at(5:6, factor)
+data <- data %>% mutate_at(8:9, factor)
+data <- data %>% mutate_at(12:12, factor)
+data <- data %>% mutate_at(15:81, factor)
+data <- data %>% mutate_at(83:93, factor)
+
+table(data$DIS_DIAB_EVER)
+
+data <- data %>%
+	mutate(diabetes = case_when(
+		DIS_DIAB_EVER == 0 ~ 0,
+		DIS_DIAB_EVER == 1 ~ 1,
+		DIS_DIAB_EVER == 2 ~ 0)) %>%
+		mutate(diabetes = as.factor(diabetes))
+
+table(data$DIS_DIAB_EVER, data$diabetes)
+
+data$DIS_DIAB_EVER <- NULL
+```
+
+```{r}
+data_continuous <- select(data, diabetes, 
+                            PSE_ADULT_WRK_DURATION, 
+                            PM_BMI_SR, 
+                            PA_TOTAL_SHORT, 
+                            SDC_HOUSEHOLD_CHILDREN_NB, 
+                            SDC_HOUSEHOLD_ADULTS_NB, 
+                            SDC_EDU_LEVEL_AGE, 
+                            SDC_AGE_CALC, 
+                            SDC_GENDER)
+```
+
+# Artificial Neural Networks
+
+### Creating training and testing data
+
+```{r}
+set.seed(10)
+
+#### Cross Validation Split
+cv_split <- initial_validation_split(data_continuous, 
+                            strata = diabetes, 
+                            prop = c(0.70, 0.20))
+
+# Create data frames for the two sets:
+train_data <- training(cv_split)
+table(train_data$diabetes)
+
+test_data  <- testing(cv_split)
+table(test_data$diabetes)
+```
+
+### V folds
+
+```{r}
+folds <- vfold_cv(training(cv_split), v = 3, strata = diabetes)
+```
+
+## Recipe
+
+```{r}
+diabetes_recipe <- 
+  recipe(diabetes ~ ., data = train_data) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors(), -all_outcomes()) %>%
+  step_normalize(all_numeric_predictors())
+```
+
+
+### Model 
+
+The `mlp` argument in Tidymodels is for a Multi-Layer Perceptron (basically another name for the artificial neural network). There are 5 different engines that can be used with the `mlp` argument 
+
+* nnet (default)
+* brulee
+* brulee_two_layer
+* h2o (requires parsnip extension)
+* keras
+
+The default `nnet` engine is pretty basic and only does a feed-forward neural networks with a single hidden layer (for multinomial log-linear models). Arguably [keras](https://rstudio.github.io/cheatsheets/html/keras.html) is the most powerful of these engines and is supported in lots of different languages. Keras is similar to Tidymodels in that it has a set of specific verbs that are used to develop the model. 
+
+* Define
+* Compile
+* Fit
+* Evaluate
+* Predict 
+
+For the sake of consistency we are going to use the `brulee` engine because we do a single a two layer model without having to learn the new `keras` specific workflow. The book [Deep Learning with R](https://www.manning.com/books/deep-learning-with-r-second-edition) provides a comprehensive guide to `keras` and `tensorflow` which you will need to learn if you are working with really big data. 
+
+#### Hyperparameters
+
+As discussed in the lecture. The hyperparameters for ANN's are were things go from manageable to complex very quickly. Our previous models had at most 3 hyperparameters and now we are dealing with 6 hyperparameters. The defaults of these hyperparameters will change depending on the engine used. The defaults for `brulee` are [available here](https://brulee.tidymodels.org/reference/brulee_mlp.html).
+
+* __hidden_units__: An integer for the number of units in the hidden model.
+* __penalty__: A non-negative numeric value for the amount of weight decay.
+* __dropout__: A number between 0 (inclusive) and 1 denoting the proportion of model parameters randomly set to zero during model training.
+* __epochs__: An integer for the number of training iterations.
+* __activation__: A single character string denoting the type of relationship between the original predictors and the hidden unit layer. The activation function between the hidden and output layers is automatically set to either "linear" or "softmax" depending on the type of outcome. 
+* __learn_rate__: A number for the rate at which the boosting algorithm adapts from iteration-to-iteration (specific engines only). This is sometimes referred to as the shrinkage parameter.
+
+## Very basic model 
+
+One of the downsides of Tidymodels is that you often lose the ability to plot models because tidymodels doesn't import those plotting functions very well. Let's train a very basic model with the [neuralnet](https://cran.r-project.org/web/packages/neuralnet/index.html) package so we can show what a model might look like. 
+
+##### Run during class
+
+```{}
+## I've removed all categorical variables because they need to be dummy coded and I'm lazy
+
+basic_ann <- neuralnet(diabetes ~ PSE_ADULT_WRK_DURATION + 
+                            PM_BMI_SR + 
+                            PA_TOTAL_SHORT +
+                            SDC_HOUSEHOLD_CHILDREN_NB + 
+                            SDC_HOUSEHOLD_ADULTS_NB + 
+                            SDC_EDU_LEVEL_AGE,
+                data = train_data,
+                hidden = c(3, 2), ## Here we specify 3 hidden nodes and 1 layer
+                linear.output = FALSE
+                )
+
+plot(basic_ann, rep = "best")
+```
+
+## Tidymodels implementation
+
+```{r}
+set.seed(10)
+
+mlp_model <- mlp(epochs = tune(), hidden_units = tune(), penalty = tune(), learn_rate = tune(), activation = tune()) %>% 
+                  set_engine("brulee", validation = 0) %>% 
+                  set_mode("classification")
+```
+
+### Workflow
+
+```{r}
+mlp_workflow <- 
+  workflow() %>% 
+  add_model(mlp_model) %>% 
+  add_recipe(diabetes_recipe) %>% 
+    tune_grid(resamples = folds,
+                control = control_grid(save_pred = FALSE, 
+                verbose = FALSE)) ## Edit for running live
+```
+
+### Workflow results
+
+```{r}
+metrics_tune <- collect_metrics(mlp_workflow)
+
+show_best(mlp_workflow, metric='accuracy', n=5)  # only show the results for the best 5 models
+
+plot(autoplot(mlp_workflow, metric = 'accuracy'))
+```
+
+### Final model - Test data
+
+```{r}
+mlp_best <- 
+  mlp_workflow %>% 
+  select_best(metric = "accuracy")
+
+mlp_final_model <- finalize_model(
+                          mlp_model,
+                          mlp_best
+                          )
+mlp_final_model
+
+
+final_mlp_workflow <- workflow() %>%
+                      add_recipe(diabetes_recipe) %>%
+                      add_model(mlp_final_model)
+
+final_mlp_results <- final_mlp_workflow %>%
+                    last_fit(cv_split)
+
+mlp_results <- final_mlp_results %>% collect_metrics()
+```
+
+## Final Results
+
+```{r}
+kable(mlp_results)
+```
+
+## Variable Importance
+
+No variable importance? Any idea why? 
+
+# Resources
+
+1. https://www.tidymodels.org/learn/models/parsnip-nnet/
+2. https://www.datacamp.com/tutorial/neural-network-models-r
+
+
+## Session Info
+
+```{r}
+sessionInfo()
+```
+
+
